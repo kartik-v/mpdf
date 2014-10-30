@@ -8,11 +8,11 @@ Why this repo?
 --------------
 
 I needed this for building many of my dependent PHP based projects that use this wonderful PDF library. Managing package dependencies via a central repository was important for folks like me. I use composer to manage package dependencies via packages on packagist.org.
-In addition, if you are a user who works with the Bootstrap CSS framework like me, the default styling needed to be changed. So the minor changes from the official mPDF library are:
+In addition, the default CSS had to be normalized (as in Bootstrap CSS or other major frameworks). So the minor changes from the official mPDF library are:
 
 - Added ability to update library and manage dependencies via composer 
 - Uses the latest development version (v6.0beta) of the mPDF library. I needed the latest development version via composer, which was not found elsewhere.
-- The default mPDF.css contains v3.2.0 of the bootstrap css. 
+- A mPDF.css is created in the root directory. It contains basic normalize.css (for html tag elements only) as available in v3.2.0 of the bootstrap css. 
 
 Installation
 ------------
