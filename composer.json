@@ -15,8 +15,6 @@
         "ext-mbstring": "*"
     },
     "autoload": {
-        "psr-4": {
-            "kartik\\mpdf\\": ""
-        }
+        "classmap": ["mpdf.php", "classes"]
     }
 }
