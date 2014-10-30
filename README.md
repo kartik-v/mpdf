@@ -41,7 +41,7 @@ Usage
 PHP 5.4 and later can use namespaces to access. Refer the [official documentation manual](http://mpdf1.com/manual/index.php) at the [mpdf1 site](http://mpdf1.com) for further details and understanding of the library.
 
 ```php
-use \mPDF;
+use \kartik\mpdf\mPDF;
 
 $pdf = new mPDF();
 ```
