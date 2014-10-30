@@ -6,7 +6,7 @@ It is slower than the original scripts e.g. HTML2FPDF and produces larger files 
 
 See the [features](http://mpdf.bpm1.com/index.php?page=Features) and/or [examples](http://www.mpdf1.com/mpdf/index.php?page=Examples).
 
-This fork adds composer and packagist support. It also modifies the library to have a Bootstrap 3.2.0 normalize.css styling by default.
+This fork adds composer and packagist support. It also modifies the library to have a Bootstrap v3.x CSS specific styling for basic HTML tags by default.
 
 Why this repo?
 --------------
