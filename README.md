@@ -6,17 +6,15 @@ It is slower than the original scripts e.g. HTML2FPDF and produces larger files 
 
 See the [features](http://mpdf.bpm1.com/index.php?page=Features) and/or [examples](http://www.mpdf1.com/mpdf/index.php?page=Examples).
 
-This fork adds composer and packagist support. It also modifies the library to have a Bootstrap v3.x CSS specific styling for basic HTML tags by default.
+This fork adds composer and packagist support.
 
 Why this repo?
 --------------
 
 I needed this for building many of my dependent PHP based projects that use this wonderful PDF library. Managing package dependencies via a central repository was important for folks like me. I use composer to manage package dependencies via packages on packagist.org.
-In addition, the default CSS had to be normalized (as in Bootstrap CSS or other major frameworks). So the minor changes from the official mPDF library are:
 
 - Added ability to update library and manage dependencies via composer 
 - Uses the latest development version (v6.0beta) of the mPDF library. I needed the latest development version via composer, which was not found elsewhere.
-- A mPDF.css is created in the root directory. It contains basic normalize.css (for html tag elements only) as available in v3.2.0 of the bootstrap css. 
 
 Installation
 ------------
