@@ -11,11 +11,11 @@ This fork adds composer and packagist support.
 Why this repo?
 --------------
 
-I needed this for building many of my dependent PHP based projects that use this wonderful PDF library. Managing package dependencies via a central repository was important for folks like me. I use composer to manage package dependencies via packages on packagist.org.
+I needed this for building many of my dependent PHP based projects that use this wonderful PDF library. Managing package dependencies via a central repository was important for folks like me. I use composer to manage package dependencies via packages on packagist.org. This repository allows access to some specific features and needs:
 
-- Added ability to update library and manage dependencies via composer 
-- Uses the latest development version (v6.0beta) of the mPDF library. I needed the latest development version via composer, which was not found elsewhere. mPDF 6.0 can utilise OpenType layout tables to display complex scripts. It will be of most interest to those wishing to use Arabic or Indic scripts (as well as Khmer, Lao, Myanmar etc.). It will  also improve the display of Thai, Vietnamese and Hebrew.
-- This beta release contains (open source) fonts to cover almost every imaginable script/language. It also includes additional fonts for Chinese, Japanese, and Korean.
+1. Adds ability to update library and manage dependencies via composer in your PHP based applications
+2. Uses the latest development version (v6.0beta) of the mPDF library. I needed the latest development version via composer, which was not found elsewhere. mPDF 6.0 can utilise OpenType layout tables to display complex scripts. It will be of most interest to those wishing to use Arabic or Indic scripts (as well as Khmer, Lao, Myanmar etc.). It will  also improve the display of Thai, Vietnamese and Hebrew.
+3. This beta release (v6.0) contains fonts (open source) to cover almost every imaginable script / language. It also includes additional fonts for Chinese, Japanese, and Korean.
 
 This [demo PDF](http://www.mpdf1.com/repos/example61_new_mPDF_v6-0_features.pdf) file explains what mPDF 6.0 can do, and acts as temporary documentation. The source file for this is also included as [example61_new_mPDF_v6-0_features.php](https://github.com/kartik-v/mpdf/blob/master/examples/example61_new_mPDF_v6-0_features.php) in the repository.
 
