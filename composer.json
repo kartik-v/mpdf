@@ -9,7 +9,8 @@
         {
             "name": "Ian N Back "
         }
-    ],    
+    ], 
+    "minimum-stability": "stable",
     "require": {
         "php": ">=4.3.10",
         "ext-mbstring": "*"
