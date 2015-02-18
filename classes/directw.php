@@ -210,8 +210,8 @@ function Write($h,$txt,$currentx=0,$link='',$directionality='ltr',$align='') {
 }
 
 
-function CircularText($x, $y, $r, $text, $align='top', $fontfamily='', $fontsizePt=0, $fontstyle='', $kerning=120, $fontwidth=100, $divider='') {	// mPDF 5.5.23
-	if ($font || $fontstyle || $fontsizePt) $this->mpdf->SetFont($fontfamily,$fontstyle,$fontsizePt);
+function CircularText($x, $y, $r, $text, $align='top', $fontfamily='', $fontsizePt=0, $fontstyle='', $kerning=120, $fontwidth=100, $divider='') {
+	if ($fontfamily || $fontstyle || $fontsizePt) $this->mpdf->SetFont($fontfamily,$fontstyle,$fontsizePt);
 	$kerning/=100;
 	$fontwidth/=100;        
 	if($kerning==0) $this->mpdf->Error('Please use values unequal to zero for kerning (CircularText)');
@@ -219,7 +219,6 @@ function CircularText($x, $y, $r, $text, $align='top', $fontfamily='', $fontsize
 	$text=str_replace("\r",'',$text);
 	//circumference
 	$u=($r*2)*M_PI;
-	// mPDF 5.5.23
 	$checking = true;
 	$autoset = false;
 	while($checking) {
@@ -370,7 +369,7 @@ function Shaded_box( $text,$font='',$fontstyle='B',$szfont='',$width='70%',$styl
 	}
 	$this->mpdf->OTLtags = $save_OTLtags ;
 
-	$this->mpdf->magic_reverse_dir($text, $this->mpdf->directionality, $OTLdata, '', '');
+	$this->mpdf->magic_reverse_dir($text, $this->mpdf->directionality, $OTLdata);
 
 	if (!$width) { $width = $this->mpdf->pgwidth; } else { $width=$this->mpdf->ConvertSize($width,$this->mpdf->pgwidth); }
 	$midpt = $this->mpdf->lMargin+($this->mpdf->pgwidth/2);
@@ -402,7 +401,7 @@ function Shaded_box( $text,$font='',$fontstyle='B',$szfont='',$width='70%',$styl
 	$this->mpdf->SetTColor($tc);
 	$this->mpdf->RoundedRect($r1, $y1, ($r2 - $r1), $y2, $radius, $style);
 	$this->mpdf->SetX( $r1);
-	$this->mpdf->Cell($r2-$r1, $y2, $text, 0, 1, "C",0,'',0,0,0,'M', 0, 0, 0, false, $OTLdata, $textvar );
+	$this->mpdf->Cell($r2-$r1, $y2, $text, 0, 1, "C",0,'',0,0,0,'M', 0, false, $OTLdata, $textvar );
 	$this->mpdf->SetY($y1+$y2+2);	// +2 = mm margin below shaded box
 	$this->mpdf->Reset();
 }

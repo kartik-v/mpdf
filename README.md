@@ -4,7 +4,7 @@ mpdf
 This is a fork of the [mPDF library](http://mpdf1.com/). mPDF is a PHP class which generates PDF files from UTF-8 encoded HTML. It is based on [FPDF](http://www.fpdf.org/) and [HTML2FPDF](http://html2fpdf.sourceforge.net/), with a number of enhancements.
 It is slower than the original scripts e.g. HTML2FPDF and produces larger files when using Unicode fonts, but support for CSS styles etc. has been much enhanced.
 
-See the [features](http://mpdf.bpm1.com/index.php?page=Features) and/or [examples](http://www.mpdf1.com/mpdf/index.php?page=Examples).
+See the [features](http://www.mpdf1.com/mpdf/index.php?page=Features) and/or [examples](http://www.mpdf1.com/mpdf/index.php?page=Examples).
 
 This fork adds composer and packagist support.
 

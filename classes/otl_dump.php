@@ -1502,6 +1502,10 @@ if (!isset($Lookup[$i]['Subtable'][$c]['Sequences'][$g]['SubstituteGlyphID']) ||
 
 							$Lookup[$i]['Subtable'][$c]['subs'][] = array('Replace'=>$replace, 'substitute'=>$substitute);
 						}
+if ($i==166) {
+	print_r($Lookup[$i]['Subtable']);
+	exit;
+}
 					}
 					// LookupType 4: Ligature Substitution Subtable n => 1
 					else if ($Lookup[$i]['Type'] == 4) {
@@ -1912,8 +1916,8 @@ $subRule = array();
 
 
 									for ($b=0;$b<$rule['SubstCount'];$b++) {
-										$lup = $rule['LookupListIndex'][$b];
-										$seqIndex = $rule['SequenceIndex'][$b];
+										$lup = $rule['SubstLookupRecord'][$b]['LookupListIndex'];
+										$seqIndex = $rule['SubstLookupRecord'][$b]['SequenceIndex'];
 
 										// GENERATE exampleI[<seqIndex] .... exampleI[>seqIndex] 
 										$exB = '';
@@ -3025,6 +3029,7 @@ F - "\${1}\${2} \${3}\${4} \${5} REPL\${6}\${8}"
 						//===========
 						if ($PosFormat==1) {
 							$PairSetCount = $this->read_ushort();
+							$PairSetOffset = array();
 							for($p=0;$p<$PairSetCount;$p++) {
 								$PairSetOffset[] = $subtable_offset + $this->read_ushort();
 							}
@@ -3296,6 +3301,7 @@ $html .= '</div>';
 
 						$this->seek($LigatureArray);
 						$LigatureCount = $this->read_ushort();
+						$LigatureAttach = array();
 						$html .= '<div class="glyphs">Ligatures: <span class="unchanged">';
 						for ($j=0;$j<count($LigatureGlyphs);$j++) {
 							// Get the relevant LigatureRecord
@@ -3398,7 +3404,9 @@ $html .= '</div>';
 						else if ($PosFormat==3) {	
 							die("GPOS Lookup Type ".$Type." Format ".$PosFormat." not YET TESTED."); 
 						}
-						else { die("GPOS Lookup Type ".$Type.", Format ".$PosFormat." not supported."); }
+						else { 
+							die("GPOS Lookup Type ".$Type.", Format ".$PosFormat." not supported."); 
+						}
 					}
 					////////////////////////////////////////////////////////////////////////////////
 					// LookupType 8: Chained Context positioning 	Position one or more glyphs in chained context
@@ -3417,23 +3425,25 @@ $html .= '</div>';
 						else if ($PosFormat==2) {
 							$html .= '<div>GPOS Lookup Type 8: Format 2 not yet supported in OTL dump</div>';
 							continue;
-							/* NB When dveloping - cf. GSUB 6.2 */
+							/* NB When developing - cf. GSUB 6.2 */
 							die("GPOS Lookup Type ".$Type." Format ".$PosFormat." not TESTED YET."); 
 						}
 						//===========
 						// Format 3: 
 						//===========
 						else if ($PosFormat==3) {
-
 							$BacktrackGlyphCount = $this->read_ushort();
+							$CoverageBacktrackOffset = array();
 							for ($b=0;$b<$BacktrackGlyphCount;$b++) {
 								$CoverageBacktrackOffset[] = $subtable_offset + $this->read_ushort();	// in glyph sequence order
 							}
 							$InputGlyphCount = $this->read_ushort();
+							$CoverageInputOffset = array();
 							for ($b=0;$b<$InputGlyphCount;$b++) {
 								$CoverageInputOffset[] = $subtable_offset + $this->read_ushort();	// in glyph sequence order
 							}
 							$LookaheadGlyphCount = $this->read_ushort();
+							$CoverageLookaheadOffset = array();
 							for ($b=0;$b<$LookaheadGlyphCount;$b++) {
 								$CoverageLookaheadOffset[] = $subtable_offset + $this->read_ushort();	// in glyph sequence order
 							}

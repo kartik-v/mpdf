@@ -6,12 +6,11 @@
 // Useful if you already have a folder for your fonts
 // e.g. on Windows: define("_MPDF_SYSTEM_TTFONTS", 'C:/Windows/Fonts/');
 
-//define("_MPDF_SYSTEM_TTFONTS", 'C:/xampp/htdocs/common/ttffonts/');
+//if (!defined("_MPDF_SYSTEM_TTFONTS")) { define("_MPDF_SYSTEM_TTFONTS", 'C:/xampp/htdocs/common/ttffonts/'); }
 
 // Optionally set font(s) (names as defined below in $this->fontdata) to use for missing characters
 // when using useSubstitutions. Use a font with wide coverage - dejavusanscondensed is a good start
 // only works using subsets (otherwise would add very large file)
-// doesn't do Indic or arabic
 // More than 1 font can be specified but each will add to the processing time of the script
 
 // $this->backupSubsFont = array('dejavusanscondensed','arialunicodems','sun-exta');	// this will recognise most scripts
@@ -133,6 +132,7 @@ $this->fontdata = array(
 		'I' => "FreeSerifItalic.ttf",
 		'BI' => "FreeSerifBoldItalic.ttf",
 		'useOTL' => 0xFF,
+		'useKashida' => 75,
 		),
 	"freemono" => array(
 		'R' => "FreeMono.ttf",
@@ -146,10 +146,6 @@ $this->fontdata = array(
 	"ocrb" => array(
 		'R' => "ocrb10.ttf",
 		),
-
-
-
-
 
 
 
@@ -290,15 +286,15 @@ $this->fontdata = array(
 
 
 /* CJK fonts */
-	"unbatang" => array(	/* Korean */
-		'R' => "UnBatang_0613.ttf",
-		),
 	"sun-exta" => array(
 		'R' => "Sun-ExtA.ttf",
 		'sip-ext' => 'sun-extb',		/* SIP=Plane2 Unicode (extension B) */
 		),
 	"sun-extb" => array(
 		'R' => "Sun-ExtB.ttf",
+		),
+	"unbatang" => array(	/* Korean */
+		'R' => "UnBatang_0613.ttf",
 		),
 
 
@@ -322,7 +318,7 @@ $this->BMPonly = array(
 //     (Otherwise the order is irrelevant)
 // Use the mPDF font-family names i.e. lowercase and no spaces (after any translations in $fonttrans)
 // Always include "sans-serif", "serif" and "monospace" etc.
-$this->sans_fonts = array('dejavusanscondensed','dejavusans','freesans','liberationsans','sans','sans-serif','cursive','fantasy', 
+$this->sans_fonts = array('dejavusanscondensed','sans','sans-serif','cursive','fantasy','dejavusans','freesans','liberationsans', 
 				'arial','helvetica','verdana','geneva','lucida','arialnarrow','arialblack','arialunicodems',
 				'franklin','franklingothicbook','tahoma','garuda','calibri','trebuchet','lucidagrande','microsoftsansserif',
 				'trebuchetms','lucidasansunicode','franklingothicmedium','albertusmedium','xbriyaz','albasuper','quillscript',
@@ -330,13 +326,13 @@ $this->sans_fonts = array('dejavusanscondensed','dejavusans','freesans','liberat
 
 );
 
-$this->serif_fonts = array('dejavuserifcondensed','dejavuserif','freeserif','liberationserif','serif',
+$this->serif_fonts = array('dejavuserifcondensed','serif','dejavuserif','freeserif','liberationserif',
 				'timesnewroman','times','centuryschoolbookl','palatinolinotype','centurygothic',
 				'bookmanoldstyle','bookantiqua','cyberbit','cambria',
 				'norasi','charis','palatino','constantia','georgia','albertus','xbzar','algerian','garamond',
 );
 
-$this->mono_fonts = array('dejavusansmono','freemono','liberationmono','courier', 'mono','monospace','ocrb','ocr-b','lucidaconsole',
+$this->mono_fonts = array('dejavusansmono','mono','monospace','freemono','liberationmono','courier', 'ocrb','ocr-b','lucidaconsole',
 				'couriernew','monotypecorsiva'
 );
 

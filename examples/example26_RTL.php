@@ -91,7 +91,7 @@ div.mpdf_index_letter {
 <div style="direction: ltr;">
 <p>Text alignment, unless specified, is neutral and therefore dictated by the \'direction\' of the paragraph.</p>
 
-<p>All text is analysed chunk by chunk (between tags) and at the end of every block (div, p, td). If the text contains RTL characters, those characters and words are reversed.</p>
+<p>Ttext is analysed at the end of every block element (div, p, td). If the text contains RTL characters, those characters and words are reversed according to the Unicode BiDirectional algorithm e.g.</p>
 
 <p lang="ar" style="direction: rtl;">&#x648;&#x627;&#x62f;&#x627;&#x646; &#x627;&#x644;&#x628;&#x64a;&#x62a; &#x627;&#x644;&#x627;&#x628;&#x64a;&#x636; &quot;&#x628;&#x634;&#x62f;&#x629;&quot; &#x62a;&#x641;&#x62c;&#x64a;&#x631; with some english in the middle &#x627;&#x64a;&#x644;&#x627;&#x62a; &#x641;&#x64a;&#x645;&#x627; &#x627;&#x639;&#x631;&#x628;&#x62a; &#x648;&#x632;&#x627;&#x631;&#x629;</p>
 
@@ -102,44 +102,35 @@ div.mpdf_index_letter {
 </div>
 
 <pre style="direction: ltr; background-color: #DDFFFF; page-break-inside: avoid;">
-- the document now has a baseline direction; this determines the 
-	- behaviour of blocks for which text-align has not been specifically set
-	- layout of mirrored page-margins, columns, ToC and Indexes, headers and footers
-	- base direction can be set by any of:
-		- $mpdf-&gt;SetDirectionality(\'rtl\');
-		- &lt;html dir="rtl" or style="direction: rtl;"&gt;
-		- &lt;body dir="rtl" or style="direction: rtl;"&gt;
-	- base direction is an inherited CSS property, so will affect all content, unless...
-- direction can be set for all HTML block elements e.g. &lt;DIV&gt;&lt;P&gt;&lt;TABLE&gt;&lt;UL&gt; etc using
+The document now has a baseline direction; this determines the:
+- text-alignment in blocks for which text-align has not been specifically set
+- layout of mirrored page-margins, columns, ToC and Indexes, headers and footers
+- base direction can be set by any of:
+	- $mpdf-&gt;SetDirectionality(\'rtl\');
+	- &lt;html dir="rtl" or style="direction: rtl;"&gt;
+	- &lt;body dir="rtl" or style="direction: rtl;"&gt;
+Base direction is an inherited CSS property, so will affect all content, unless...
+- direction can be set for all HTML block elements e.g. 
+	&lt;DIV&gt;&lt;P&gt;&lt;TABLE&gt;&lt;TD&gt;&lt;UL&gt;&lt;LI&gt; etc using
 	- CSS property &lt; style="direction: rtl;"&gt; 
-	- direction can only be set on the top-level element of nested lists
-	- direction can only be set on &lt;TABLE&gt;, NOT on THEAD, TBODY, TD etc.
-	- nested tables CAN have different directions
-- NOTE that block/table margins/paddings are NOT reversed by direction
+NOTE
+- block/table margins/paddings are NOT reversed by direction
 	NB mPDF &lt;5.1 reversed the margins/paddings for blocks when RTL set.
 - language (either CSS "lang", using Autofont, or through initial set-up e.g. $mpdf = new mPDF(\'ar\') ) 
 	no longer affects direction in any way.
-	NB config_cp.php has been changed as a result; any values of "dir" set here are now ineffective
+	- config_cp.php has been changed as a result; any values of "dir" set here are now ineffective
 - default text-align is now as per CSS spec: "a nameless value which is dependent on direction" 
-	NB default text-align removed in default stylesheet in config.php 
+	NB default text-align removed from default stylesheet in config.php 
 - once text-align is specified, it is respected and inherited
 	NB mPDF &lt;5.1 reversed the text-align property for all blocks when RTL set.
-- the configurable value  is depracated, as it is no longer required
-- improved algorithm for dtermining text direction
-	- english word blocks are handled in text reversal as one block i.e. dir="rtl"
-	[arabic text] this will not be reversed [arabic text]
-	- arabic numerals 0-9 handled correctly
-
-Although the control of direction for block elements is now more configurable, the control of 
-text direction (RTL arabic characters) remains fully automatic and unconfigurable. 
-&lt;BDO&gt; etc has no effect. Enclosing text in silent tags can sometimes help e.g.
-	content&lt;span&gt;[arabic text]&lt;/span&gt;content
+- the configurable value is depracated, as it is no longer required
+- the algorithm for handling bidirectioal text was substantially re-written/improved in mPDF v 6.0
 
 </pre>
 
 <pagebreak />
 <h3>Tables</h3>
-<p>Tables are automatically transposed when the direction is rtl:</p>
+<p>Tables are automatically transposed when the direction is rtl:&#x200E;</p>
 <table lang="ar" class="bpmTopicC"><thead>
 <tr class="headerrow"><th>&#x627;&#x644;&#x627;&#x645;&#x631;&#x64a;&#x643;&#x64a;</th>
 <td>
@@ -196,7 +187,7 @@ text direction (RTL arabic characters) remains fully automatic and unconfigurabl
 </tbody></table>
 <p>&nbsp;</p>
 <h3>Lists</h3>
-<p>Lists will automatically reverse as well (note the use of list-style to set numbering):</p>
+<p>Lists will automatically reverse as well (note the use of list-style to set numbering):&#x200E;</p>
 <div style="background-color:#ddccff; padding:5pt;">
 <ol lang="ar" style="list-style-type: arabic-indic;">
 <li>&#x642;&#x627;&#x644; &#x627;&#x644;&#x631;&#x626;&#x64a;&#x633;</li>

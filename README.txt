@@ -18,7 +18,7 @@ If you have problems, please read the section on troubleshooting in the manual.
 
 Fonts
 =====
-I will refer to font names in 2 ways:
+Let us refer to font names in 2 ways:
 "CSS font-family name" - mPDF is designed primarily to read HTML and CSS. This is the name used in CSS e.g.
 	<p style="font-family: 'Trebuchet MS';">
 
@@ -100,13 +100,6 @@ new mPDF('') - default - font subsetting behaviour is determined by the configur
 	$this->maxTTFFilesize and $this->percentSubset (see below)
 	Default values are set so that: 1) very large font files are always subset
 	2) Fonts are embedded as subsets if < 30% of the characters are used
-
-new mPDF('..-x') - used together with a language or language/country code, this will cause
-	mPDF to use only in-built core fonts (Helvetica, Times) if the language specified is appropiate; 
-	otherwise it will force subsetting (equivalent to using "")
-	e.g. new mPDF('de-x') or new mPDF('pt-BR-x') will use in-built core fonts
-	and new mPDF('ru-x') will use subsets of any available TrueType fonts
-	The languages that use core fonts are defined in config_cp.php (using the value $coreSuitable).
 
 new mPDF('..+aCJK')  new mPDF('+aCJK')
 new mPDF('..-aCJK')  new mPDF('-aCJK')

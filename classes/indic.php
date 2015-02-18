@@ -207,12 +207,14 @@ public static function set_syllables(&$o, $s, &$broken_syllables) {
 			$syllable_type = self::VOWEL_SYLLABLE ;
 		}
 
-
 		/* Apply only if it's a word start. */
-			// STANDALONE_CLUSTER Stand Alone syllable at start of word
-			// From OT spec:
-		else if (($ptr==0 || !(self::FLAG($o[$ptr - 1]['general_category']) &
-			 self::FLAG_RANGE(UCDN::UNICODE_GENERAL_CATEGORY_FORMAT, UCDN::UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK))) 
+		// STANDALONE_CLUSTER Stand Alone syllable at start of word
+		// From OT spec:
+		else if (($ptr==0 || 
+				$o[$ptr - 1]['general_category'] < UCDN::UNICODE_GENERAL_CATEGORY_LOWERCASE_LETTER || 
+				$o[$ptr - 1]['general_category'] > UCDN::UNICODE_GENERAL_CATEGORY_NON_SPACING_MARK
+				)
+
 			&& (preg_match('/^(RH|r)?[sD][N]?([ZJ]?H[CR]m*)?([M]*[N]?[H]?)?[S]?[v]{0,2}/', substr($s,$ptr), $ma))) {
 			// From HarfBuzz:
 			// && (preg_match('/^(RH|r)?[sD](Z?[N]{0,2})?(([ZJ]?H(J[N]?)?)[CR]J?(Z?[N]{0,2})?){0,4}((([ZJ]?H(J[N]?)?)|HZ)|(HJ)?([ZJ]{0,3}M[N]?(H|JHJR)?){0,4})?(S[Z]?)?[v]{0,2}/', substr($s,$ptr), $ma)) {
@@ -230,6 +232,7 @@ public static function set_syllables(&$o, $s, &$broken_syllables) {
 				$broken_syllables = true;
 			}
 		}
+
 		for ($i = $ptr; $i < $ptr+$syllable_length; $i++) { $o[$i]['syllable'] = ($syllable_serial << 4) | $syllable_type; }
 		$ptr += $syllable_length ;
 		$syllable_serial++;
@@ -356,13 +359,16 @@ public static function insert_dotted_circles(&$info, $dottedcircle) {
 		else
 			$idx++;
 	}
+	// I am not sue how this code below got in here, since $idx should now be > count($info) and thus invalid.
+	// In case I am missing something(!) I'll leave a warning here for now:
+	if (isset($info[$idx])) { die("This shouldn't happen (in otl.php)"); exit; }
 	// In case of final bloken cluster...
-	$syllable = $info[$idx]['syllable'];
-	$syllable_type = ($syllable & 0x0F);
-	if ($last_syllable != $syllable && $syllable_type == self::BROKEN_CLUSTER) {
-		$dottedcircle[0]['syllable'] = $info[$idx]['syllable'];
-		array_splice($info, $idx, 0, $dottedcircle);
-	}
+	//$syllable = $info[$idx]['syllable'];
+	//$syllable_type = ($syllable & 0x0F);
+	//if ($last_syllable != $syllable && $syllable_type == self::BROKEN_CLUSTER) {
+	//	$dottedcircle[0]['syllable'] = $info[$idx]['syllable'];
+	//	array_splice($info, $idx, 0, $dottedcircle);
+	//}
 }
 
 
@@ -471,7 +477,7 @@ public static function initial_reordering_syllable (&$info, $GSUBdata, $indic_co
 					* search continues. This is particularly important for Bengali
 					* sequence Ra,H,Ya that should form Ya-Phalaa by subjoining Ya] */
 					if ($start < $i && $info[$i]['indic_category'] == self::OT_ZWJ && $info[$i - 1]['indic_category'] == self::OT_H) {
-						if (OMIT_INDIC_FIX_1!=1) { $base = $i; }	// INDIC_FIX_1
+						if (!defined("OMIT_INDIC_FIX_1") || OMIT_INDIC_FIX_1!=1) { $base = $i; }	// INDIC_FIX_1
 						break;
 					}
 					// ZKI8
@@ -652,7 +658,7 @@ public static function initial_reordering_syllable (&$info, $GSUBdata, $indic_co
 
 
 /*
-if (OMIT_INDIC_FIX_2 != 1) {
+if (!defined("OMIT_INDIC_FIX_2") || OMIT_INDIC_FIX_2 != 1) {
 	// INDIC_FIX_2
 	$ZWNJ_found = false;
 	$POST_ZWNJ_c_found = false;
@@ -730,7 +736,7 @@ if (OMIT_INDIC_FIX_2 != 1) {
 
 
 	if ($scriptblock != UCDN::SCRIPT_KHMER) { 
-	if (OMIT_INDIC_FIX_3 != 1) {
+	if (!defined("OMIT_INDIC_FIX_3") || OMIT_INDIC_FIX_3 != 1) {
 		/* INDIC_FIX_3 */
 		/* Find a (pre-base) Consonant, Halant,Ra sequence and mark Halant|Ra for below-base BLWF processing. */
 		// TEST CASE &#x995;&#x9cd;&#x9b0;&#x9cd;&#x995; in FreeSans versus Vrinda
@@ -806,9 +812,8 @@ if (OMIT_INDIC_FIX_2 != 1) {
 		if (self::is_joiner ($info[$i])) {
 			$non_joiner = ($info[$i]['indic_category'] == self::OT_ZWNJ);
 			$j = $i;
-
 			while ($j > $start) {
-				if (OMIT_INDIC_FIX_4 == 1) {
+				if (defined("OMIT_INDIC_FIX_4") && OMIT_INDIC_FIX_4 == 1) {
 					// INDIC_FIX_4 = do nothing - carry on //
 					// ZWNJ should block H C from forming blwf post-base - need to unmask backwards beyond first consonant arrived at //
 					if  (!self::is_consonant($info[$j])) { break; }
@@ -864,7 +869,7 @@ public static function final_reordering_syllable (&$info, $GSUBdata, $indic_conf
 		}
 	if ($base == $end && $start < $base && $info[$base - 1]['indic_category'] != self::OT_ZWJ)
 		$base--;
-	while ($start < $base && ($info[$base]['indic_category'] == self::OT_H || $info[$base]['indic_category'] == self::OT_N))
+	while ($start < $base && isset($info[$base]) && ($info[$base]['indic_category'] == self::OT_H || $info[$base]['indic_category'] == self::OT_N))
 		$base--;
 
 
@@ -992,11 +997,11 @@ public static function final_reordering_syllable (&$info, $GSUBdata, $indic_conf
 		/* This is our take on what step 4 is trying to say (and failing, BADLY). */
 		if ($reph_pos == self::REPH_POS_AFTER_SUB && !$skip_to_reph_move && !$skip_to_reph_step_5) {
 			$new_reph_pos = $base;
-			while ($new_reph_pos < $end &&
-			!( self::FLAG($info[$new_reph_pos + 1]['indic_position']) & (self::FLAG(self::POS_POST_C) | self::FLAG(self::POS_AFTER_POST) | self::FLAG(self::POS_SMVD))))
+			while ($new_reph_pos < $end && isset($info[$new_reph_pos + 1]['indic_position']) && 
+			!( self::FLAG($info[$new_reph_pos + 1]['indic_position']) & (self::FLAG(self::POS_POST_C) | self::FLAG(self::POS_AFTER_POST) | self::FLAG(self::POS_SMVD)))) {
 				$new_reph_pos++;
-			if ($new_reph_pos < $end)
-				$skip_to_reph_move =true;
+			}
+			if ($new_reph_pos < $end) { $skip_to_reph_move =true; }
 		}
 
 		/*	5. If no consonant is found in steps 3 or 4, move reph to a position
@@ -1170,7 +1175,7 @@ public static function is_ra ($u) {
 }
 
 public static function is_one_of ($info, $flags) {
-	if ($info['is_ligature']) return false;	/* If it ligated, all bets are off. */
+	if (isset($info['is_ligature']) && $info['is_ligature']) return false;	/* If it ligated, all bets are off. */
 	return !!(self::FLAG($info['indic_category']) & $flags);
 }
 
@@ -1200,9 +1205,6 @@ public static function in_range ($u, $lo, $hi) {
 }
 // From hb-private.hh
 public static function FLAG($x) { return (1<<($x)); }
-
-public static function FLAG_RANGE($x,$y) { self::FLAG(y+1) - self::FLAG(x); }
-
 
 
 // BELOW from hb-ot-shape-complex-indic.cc

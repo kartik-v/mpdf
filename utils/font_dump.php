@@ -12,9 +12,12 @@
 */
 
 
-$font = 'freesans';	// Use internal mPDF font-name
+$font = 'dejavusanscondensed';	// Use internal mPDF font-name
 
-$showmissing = true;	// Show all missing unicode blocks / characters
+$min = 0x0020;		// Minimum Unicode value to show
+$max = 0x2FFFF;		// Maximum Unicode value to show
+
+$showmissing = false;	// Show all missing unicode blocks / characters
 
 
 //////////////////////////////////
@@ -77,10 +80,10 @@ $counter=0;
 include(_MPDF_TTFONTDATAPATH.$font.'.mtx.php');
 
 if ($smp) {
-	$max = 131071;
+	$max = min($max,131071);
 }
 else { 
-	$max = 65535;
+	$max = min($max,65535);
 }
 
 
@@ -99,8 +102,8 @@ $justfinishedblankinvalid = false;
 	  $lastrange  = $range ;
     // create HTML content
     $html .= '<table cellpadding="2" cellspacing="0" style="font-family:'.$font.';text-align:center; border-collapse: collapse; ">';
-    $html .= '<tr><td colspan="18" style="font-family:helvetica;font-weight:bold">'.strtoupper($font).'</td></tr>';
-    $html .= '<tr><td colspan="18" style="font-family:helvetica;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart .'-U+'.$rangeend.')</td></tr>';
+    $html .= '<tr><td colspan="18" style="font-family:dejavusanscondensed;font-weight:bold">'.strtoupper($font).'</td></tr>';
+    $html .= '<tr><td colspan="18" style="font-family:dejavusanscondensed;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart .'-U+'.$rangeend.')</td></tr>';
     $html .= '<tr><td></td>';
 
     $html .= '<td></td>';
@@ -110,7 +113,7 @@ $justfinishedblankinvalid = false;
 
 
     // print each character
-    for ($i = 32; $i < $max; ++$i) {
+    for ($i = $min; $i <= $max; ++$i) {
         if (($i > 0) AND (($i % 16) == 0)) {
 		$notthisline = true;
 		while($notthisline) {
@@ -152,7 +155,7 @@ $justfinishedblankinvalid = false;
 				$html .= '</tr></table><br />';
 				$mpdf->WriteHTML($html); $html = '';
 				$html .= '<table cellpadding="2" cellspacing="0" style="font-family:'.$font.';text-align:center; border-collapse: collapse; ">';
-    				$html .= '<tr><td colspan="18" style="font-family:helvetica;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart.'-U+'.$rangeend.')</td></tr>';
+    				$html .= '<tr><td colspan="18" style="font-family:dejavusanscondensed;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart.'-U+'.$rangeend.')</td></tr>';
 				$html .= '<tr><td></td>';
     				$html .= '<td></td>';
 				for ($k = 0; $k < 16; $k++) {
@@ -181,7 +184,7 @@ $justfinishedblankinvalid = false;
 			$html .= '</tr></table><br />';
 			$mpdf->WriteHTML($html); $html = '';
 			$html .= '<table cellpadding="2" cellspacing="0" style="font-family:'.$font.';text-align:center; border-collapse: collapse; ">';
-    			$html .= '<tr><td colspan="18" style="font-family:helvetica;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart.'-U+'.$rangeend.')</td></tr>';
+    			$html .= '<tr><td colspan="18" style="font-family:dejavusanscondensed;font-size:8pt;font-weight:bold">'.strtoupper($range).' (U+'.$rangestart.'-U+'.$rangeend.')</td></tr>';
 			$html .= '<tr><td></td>';
     			$html .= '<td></td>';
 			for ($k = 0; $k < 16; $k++) {
@@ -197,11 +200,11 @@ $justfinishedblankinvalid = false;
 
 	  // Add dotted circle to any character (mark) with width=0
 	  if ($mpdf->_charDefined($cw, $i) && _getCharWidth($cw, $i)==0) { $html .= '<td>&#x25cc;&#'.$i.';</td>'; $counter++; }
-	  else 
-
-	  if ($mpdf->_charDefined($cw, $i)) { $html .= '<td>&#'.$i.';</td>'; $counter++; }
-	  else if (isset($unichars[$i])) { $html .= '<td style="background-color: #FFAAAA;"></td>'; }
-	  else { $html .= '<td style="background-color: #555555;"></td>'; }
+	  else  {
+		  if ($mpdf->_charDefined($cw, $i)) { $html .= '<td>&#'.$i.';</td>'; $counter++; }
+		  else if (isset($unichars[$i])) { $html .= '<td style="background-color: #FFAAAA;"></td>'; }
+		  else { $html .= '<td style="background-color: #555555;"></td>'; }
+	 }
     }
 
     if (($i % 16) > 0) {

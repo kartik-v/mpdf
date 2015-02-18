@@ -10,6 +10,12 @@ $lorem = "<p>Nulla felis erat, imperdiet eu, ullamcorper non, nonummy quis, elit
 
 
 $html = '
+<style>
+div.mpdf_toc_level_0 {
+	padding-right: 2em;	/* match the outdent specified for ToC */
+}
+</style>
+
 <!-- defines the headers/footers -->
 
 <!--mpdf
@@ -70,7 +76,7 @@ mpdf-->
 <h2>Table of Contents & Bookmarks</h2>
 
 <!-- set the headers/footers - they will occur from here on in the document -->
-<tocpagebreak paging="on" links="on" toc-odd-header-name="html_tocHTMLHeader" toc-even-header-name="html_tocHTMLHeaderEven" toc-odd-footer-name="html_tocHTMLFooter" toc-even-footer-name="html_tocHTMLFooterEven" toc-odd-header-value="on" toc-even-header-value="on" toc-odd-footer-value="on" toc-even-footer-value="on" toc-preHTML="&lt;h2&gt;Contents&lt;/h2&gt;" toc-bookmarkText="Content list" resetpagenum="1" pagenumstyle="A" odd-header-name="html_myHTMLHeader" odd-header-value="on" even-header-name="html_myHTMLHeaderEven" even-header-value="ON" odd-footer-name="html_myHTMLFooter" odd-footer-value="on" even-footer-name="html_myHTMLFooterEven" even-footer-value="on" outdent="2em" />
+<tocpagebreak paging="on" links="on" toc-odd-header-name="html_tocHTMLHeader" toc-even-header-name="html_tocHTMLHeaderEven" toc-odd-footer-name="html_tocHTMLFooter" toc-even-footer-name="html_tocHTMLFooterEven" toc-odd-header-value="on" toc-even-header-value="on" toc-odd-footer-value="on" toc-even-footer-value="on" toc-preHTML="&lt;h2&gt;Contents&lt;/h2&gt;" toc-bookmarkText="Content list" resetpagenum="1" pagenumstyle="A" odd-header-name="html_myHTMLHeader" odd-header-value="on" even-header-name="html_myHTMLHeaderEven" even-header-value="ON" odd-footer-name="html_myHTMLFooter" odd-footer-value="on" even-footer-name="html_myHTMLFooterEven" even-footer-value="on" outdent="2em" toc-pagenumstyle="i" />
 
 ';
 
@@ -80,6 +86,8 @@ include("../mpdf.php");
 $mpdf=new mPDF('c','A4','','',32,25,27,25,16,13); 
 
 $mpdf->mirrorMargins = 1;
+
+$mpdf->defaultPageNumStyle = 'i';
 
 $mpdf->SetDisplayMode('fullpage','two');
 
@@ -102,7 +110,7 @@ for ($j = 1; $j<7; $j++) {
    if ($j==3)	$mpdf->WriteHTML('<pagebreak resetpagenum="1" pagenumstyle="a" />',2);
    if ($j==4)	$mpdf->WriteHTML('<pagebreak resetpagenum="0" pagenumstyle="i" />',2);
    if ($j==5)	$mpdf->WriteHTML('<pagebreak resetpagenum="0" pagenumstyle="1" />',2);
-   if ($j==6)	$mpdf->WriteHTML('<pagebreak resetpagenum="1" pagenumstyle="A" type="NEXT-ODD" /><div style="color:#AA0000">ODD</div>',2);
+   if ($j==6)	$mpdf->WriteHTML('<pagebreak resetpagenum="1" pagenumstyle="I" type="NEXT-ODD" /><div style="color:#AA0000">ODD</div>',2);
    for ($x = 1; $x<7; $x++) {
 
 

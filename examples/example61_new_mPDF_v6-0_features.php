@@ -1,10 +1,12 @@
 <?php
 
+set_time_limit(600);
 
 include("../mpdf.php");
 
 $mpdf=new mPDF(''); 
 
+$mpdf->list_auto_mode = 'mpdf';	// Used for demonstration of lists
 //==============================================================
 
 $html = '
@@ -97,6 +99,32 @@ table.fontinfo thead td {
 </style>
 <body>
 
+<htmlpagefooter name="myHTMLarabic">
+<table dir="rtl" width="100%" style="border-top: 1px solid #000000; vertical-align: top; font-family: dejavusanscondensed; font-size: 9pt; color: #000088;"><tr>
+<td width="33%"></td>
+<td width="33%" align="center">Page {PAGENO} of {nbpg}</td>
+<td width="33%" style="text-align: left;"><span lang="ar">&#x627;&#x644;&#x635;&#x641;&#x62d;&#x629; {PAGENO} &#x645;&#x646; {nbpg}</span></td>
+</tr></table>
+</htmlpagefooter>
+
+<htmlpagefooter name="myHTMLbengali">
+<table width="100%" style="border-top: 1px solid #000000; vertical-align: top; font-family: freeserif; font-size: 9pt; color: #000088;"><tr>
+<td width="33%"></td>
+<td width="33%" align="center">Page {PAGENO} of {nbpg}</td>
+<td width="33%" style="text-align: right;"><span lang="bn">{nbpg} &#x9aa;&#x9be;&#x9a4;&#x9be; &#x9a5;&#x9c7;&#x995;&#x9c7; &#x9aa;&#x9be;&#x9a4;&#x9be; {PAGENO}</span></td>
+</tr></table>
+</htmlpagefooter>
+
+<htmlpagefooter name="myHTMLhebrew">
+<table dir="rtl" width="100%" style="border-top: 1px solid #000000; vertical-align: top; font-family: dejavusanscondensed; font-size: 9pt; color: #000088;"><tr>
+<td width="33%"></td>
+<td width="33%" align="center">Page {PAGENO} of {nbpg}</td>
+<td width="33%" style="text-align: left;"><span lang="hr">&#x5e2;&#x5de;&#x5d5;&#x5d3; {PAGENO} &#x5d0;&#x5d5; {nbpg}</span></td>
+</tr></table>
+</htmlpagefooter>
+
+<sethtmlpagefooter name="myHTMLarabic" page="O" value="on" show-this-page="1" />
+<sethtmlpagefooter name="myHTMLarabic" page="E" value="on" />
 
 
 <div class="shadowtitle">New Features in mPDF v6.0</div>
@@ -244,7 +272,7 @@ Stylistic Alternatives (ss03,ss04): (off) <span style="font-size: 18pt; font-fam
 <h4>Mark repositioning (and diacritics)</h4>
 <div class="example" style="font-family: \'Dejavu Sans\'; font-size: 18pt;">
 <span style="font-feature-settings:\'mark\' off;">&#x5d6;&#x5bc;&#x5b5; &#x5d9;&#x5bc;&#x5b0; &#x5da;&#x5b8;</span>
-&nbsp; &nbsp; &nbsp; 
+&nbsp; &nbsp; &nbsp;&#x200e; 
 <span>&#x5d6;&#x5bc;&#x5b5; &#x5d9;&#x5bc;&#x5b0; &#x5da;&#x5b8;</span>
 </div>
 
@@ -269,11 +297,11 @@ and FreeSans font:
 
 <h4>Complex Typography</h4>
 An example which utilises many different GSUB and GPOS features together - first without GSUB and GPOS:
-<div class="example" dir="rtl" style="font-family:\'KFGQPC Uthman Taha Naskh\'; font-size: 26pt; line-height: 1.7em; font-feature-settings:\'calt\' off, \'liga\' off, \'curs\' off, \'mark\' off, \'mkmk\' off; margin: 0.3em 0em;">
+<div class="example" dir="rtl" style="font-family:\'KFGQPC Uthman Taha Naskh\'; font-size: 26pt; font-feature-settings:\'calt\' off, \'liga\' off, \'curs\' off, \'mark\' off, \'mkmk\' off; margin: 0.3em 0em;">
 &#x62a;&#x64e;&#x633;&#x652;&#x640;&#x654;&#x64e;&#x645;&#x64f;&#x648;&#x653;&#x627;&#x6df; &#x623;&#x64e;&#x648;&#x652; &#x643;&#x64e;&#x628;&#x650;&#x64a;&#x631;&#x64b;&#x627; &#x625;&#x650;&#x644;&#x64e;&#x649;&#x670;&#x653; &#x671;&#x644;&#x644;&#x651;&#x64e;&#x647;&#x650;  &#x648;&#x64e;&#x623;&#x64e;&#x62f;&#x652;&#x646;&#x64e;&#x649;&#x670;&#x653; &#x623;&#x64e;&#x644;&#x651;&#x64e;&#x627;  &#x625;&#x650;&#x644;&#x651;&#x64e;&#x622;  &#x628;&#x64e;&#x64a;&#x652;&#x646;&#x64e;&#x643;&#x64f;&#x645;&#x652;  &#x639;&#x64e;&#x644;&#x64e;&#x64a;&#x652;&#x643;&#x64f;&#x645;&#x652;  &#x623;&#x64e;&#x644;&#x651;&#x64e;&#x627; &#x64a;&#x64e;&#x639;&#x652;&#x62a;&#x64f;&#x645;&#x652; &#x6da;
 </div>
 With GSUB and GPOS:
-<div class="example" dir="rtl" style="font-family:\'KFGQPC Uthman Taha Naskh\'; font-size: 26pt; line-height: 1.7em; margin: 0.3em 0em;">
+<div class="example" dir="rtl" style="font-family:\'KFGQPC Uthman Taha Naskh\'; font-size: 26pt; margin: 0.3em 0em;">
 &#x62a;&#x64e;&#x633;&#x652;&#x640;&#x654;&#x64e;&#x645;&#x64f;&#x648;&#x653;&#x627;&#x6df; &#x623;&#x64e;&#x648;&#x652; &#x643;&#x64e;&#x628;&#x650;&#x64a;&#x631;&#x64b;&#x627; &#x625;&#x650;&#x644;&#x64e;&#x649;&#x670;&#x653; &#x671;&#x644;&#x644;&#x651;&#x64e;&#x647;&#x650;  &#x648;&#x64e;&#x623;&#x64e;&#x62f;&#x652;&#x646;&#x64e;&#x649;&#x670;&#x653; &#x623;&#x64e;&#x644;&#x651;&#x64e;&#x627;  &#x625;&#x650;&#x644;&#x651;&#x64e;&#x622;  &#x628;&#x64e;&#x64a;&#x652;&#x646;&#x64e;&#x643;&#x64f;&#x645;&#x652;  &#x639;&#x64e;&#x644;&#x64e;&#x64a;&#x652;&#x643;&#x64f;&#x645;&#x652;  &#x623;&#x64e;&#x644;&#x651;&#x64e;&#x627; &#x64a;&#x64e;&#x639;&#x652;&#x62a;&#x64f;&#x645;&#x652; &#x6da;
 </div>
 
@@ -281,12 +309,12 @@ With GSUB and GPOS:
 
 <h4>Text Justification using Kashida</h4>
 
-<div class="example" dir="rtl" style="font-family: \'KFGQPC Uthman Taha Naskh\'; font-size: 29pt; line-height: 1.7em; ">
+<div class="example" dir="rtl" style="font-family: \'KFGQPC Uthman Taha Naskh\'; font-size: 29pt; ">
 &#x64a;&#x64e;&#x640;&#x670;&#x653;&#x623;&#x64e;&#x64a;&#x651;&#x64f;&#x647;&#x64e;&#x627; &#x671;&#x644;&#x651;&#x64e;&#x630;&#x650;&#x64a;&#x646;&#x64e; &#x621;&#x64e;&#x627;&#x645;&#x64e;&#x646;&#x64f;&#x648;&#x653;&#x627;&#x6df; &#x625;&#x650;&#x630;&#x64e;&#x627; 
 &#x62a;&#x64e;&#x62f;&#x64e;&#x627;&#x64a;&#x64e;&#x646;&#x62a;&#x64f;&#x645; &#x628;&#x650;&#x62f;&#x64e;&#x64a;&#x652;&#x646;&#x64d; 
 &#x625;&#x650;&#x644;&#x64e;&#x649;&#x670;&#x653; &#x623;&#x64e;&#x62c;&#x64e;&#x644;&#x64d;&#x6e2; &#x645;&#x651;&#x64f;&#x633;&#x64e;&#x645;&#x651;&#x64b;&#x6ed;&#x649; &#x641;&#x64e;&#x671;&#x643;&#x652;&#x62a;&#x64f;&#x628;&#x64f;&#x648;&#x647;&#x64f; &#x6da; 
 </div>
-<div class="example" dir="rtl" style="font-family: \'KFGQPC Uthman Taha Naskh\'; font-size: 29pt; line-height: 1.7em; text-align: justify;">
+<div class="example" dir="rtl" style="font-family: \'KFGQPC Uthman Taha Naskh\'; font-size: 29pt; text-align: justify;">
 &#x64a;&#x64e;&#x640;&#x670;&#x653;&#x623;&#x64e;&#x64a;&#x651;&#x64f;&#x647;&#x64e;&#x627; &#x671;&#x644;&#x651;&#x64e;&#x630;&#x650;&#x64a;&#x646;&#x64e; &#x621;&#x64e;&#x627;&#x645;&#x64e;&#x646;&#x64f;&#x648;&#x653;&#x627;&#x6df; &#x625;&#x650;&#x630;&#x64e;&#x627; 
 &#x62a;&#x64e;&#x62f;&#x64e;&#x627;&#x64a;&#x64e;&#x646;&#x62a;&#x64f;&#x645; &#x628;&#x650;&#x62f;&#x64e;&#x64a;&#x652;&#x646;&#x64d; 
 &#x625;&#x650;&#x644;&#x64e;&#x649;&#x670;&#x653; &#x623;&#x64e;&#x62c;&#x64e;&#x644;&#x64d;&#x6e2; &#x645;&#x651;&#x64f;&#x633;&#x64e;&#x645;&#x651;&#x64b;&#x6ed;&#x649; &#x641;&#x64e;&#x671;&#x643;&#x652;&#x62a;&#x64f;&#x628;&#x64f;&#x648;&#x647;&#x64f; &#x6da; 
@@ -385,17 +413,17 @@ SYRIAC - Estrangelo Edessa
 
 MYANMAR (Burmese)
 Padauk Book (SIL Font)
-<div style="font-family:\'Padauk Book\'; font-size: 12pt; line-height: 1.7em;">
+<div style="font-family:\'Padauk Book\'; font-size: 12pt;">
 &#x1019;&#x103c;&#x1014;&#x103a;&#x200b;&#x1019;&#x102c;&#x1021;&#x1001;&#x1031;&#x102b;&#x103a; &#x1010;&#x101b;&#x102c;&#x1038;&#x101d;&#x1004;&#x103a;&#x200b;&#x1021;&#x102c;&#x1038;&#x200b;&#x1016;&#x103c;&#x1004;&#x1037;&#x103a; &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f; &#x101e;&#x1019;&#x1039;&#x1019;&#x1010; &#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x101e;&#x100a;&#x103a; &#x1021;&#x101b;&#x103e;&#x1031;&#x1037;&#x1010;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1021;&#x102c;&#x200b;&#x101b;&#x103e;&#x1010;&#x103d;&#x1004;&#x103a; &#x1027;&#x200b;&#x101b;&#x102d;&#x200b;&#x101a;&#x102c;&#x200b;&#x1021;&#x102c;&#x1038;&#x200b;&#x1016;&#x103c;&#x1004;&#x1037;&#x103a; &#x1012;&#x102f;&#x1010;&#x102d;&#x101a; &#x1021;&#x1000;&#x103b;&#x101a;&#x103a;&#x200b;&#x101d;&#x1014;&#x103a;&#x1038;&#x200b;&#x1006;&#x102f;&#x1036;&#x1038;[&#x1041;] &#x1010;&#x102d;&#x102f;&#x1004;&#x103a;&#x1038;&#x200b;&#x1015;&#x103c;&#x100a;&#x103a; &#x1016;&#x103c;&#x1005;&#x103a;&#x200b;&#x101e;&#x100a;&#x103a;&#x104b; &#x1041;&#x1049;&#x1044;&#x1048; &#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1007;&#x1014;&#x103a;&#x1014;&#x101d;&#x102b;&#x101b;&#x102e; &#x1044; &#x101b;&#x1000;&#x103a;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a; &#x1002;&#x101b;&#x102d;&#x1010;&#x103a;&#x200b;&#x1017;&#x103c;&#x102d;&#x200b;&#x1010;&#x102d;&#x1014;&#x103a;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x1004;&#x1036;&#x1011;&#x1036;&#x200b;&#x1019;&#x103e; (&#x1021;&#x1004;&#x103a;&#x1039;&#x1002;&#x101c;&#x102d;&#x1015;&#x103a;&#x200b;&#x101c;&#x102d;&#x102f; "Myanmar" &#x1021;&#x1016;&#x103c;&#x1005;&#x103a;&#x200b;&#x1014;&#x103e;&#x1004;&#x1037;&#x103a;) &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f;&#x200b;&#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x1016;&#x103c;&#x1005;&#x103a; &#x101c;&#x103d;&#x1010;&#x103a;&#x101c;&#x1015;&#x103a;&#x200b;&#x101b;&#x1031;&#x1038;&#x200b;&#x1000;&#x102d;&#x102f; &#x101b;&#x200b;&#x101b;&#x103e;&#x102d;&#x200b;&#x1001;&#x1032;&#x1037;&#x200b;&#x101e;&#x100a;&#x103a;&#x104b; &#x1014;&#x1031;&#x102c;&#x1000;&#x103a;&#x200b;&#x1015;&#x102d;&#x102f;&#x1004;&#x103a;&#x1038;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a; &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f; &#x1006;&#x102d;&#x102f;&#x200b;&#x101b;&#x103e;&#x101a;&#x103a;&#x200b;&#x101c;&#x1005;&#x103a; &#x101e;&#x1019;&#x1039;&#x1019;&#x1010;&#x200b;&#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x1016;&#x103c;&#x1005;&#x103a; &#x1041;&#x1049;&#x1047;&#x1044; &#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1007;&#x1014;&#x103a;&#x1014;&#x101d;&#x102b;&#x101b;&#x102e; &#x1044; &#x101b;&#x1000;&#x103a;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a;&#x200b;&#x101c;&#x100a;&#x103a;&#x1038;&#x1000;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038;&#x104a; &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f; &#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x1016;&#x103c;&#x1005;&#x103a; &#x1041;&#x1049;&#x1048;&#x1048;&#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1005;&#x1000;&#x103a;&#x1010;&#x1004;&#x103a;&#x1018;&#x102c; &#x1042;&#x200b;&#x1043; &#x101b;&#x1000;&#x103a;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a;&#x200b;&#x101c;&#x100a;&#x103a;&#x1038;&#x1000;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038;&#x104a; &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f; &#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x1016;&#x103c;&#x1005;&#x103a; &#x1041;&#x1049;&#x1048;&#x1049; &#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1007;&#x103d;&#x1014;&#x103a; &#x1041;&#x200b;&#x1048; &#x101b;&#x1000;&#x103a;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a; &#x101c;&#x100a;&#x103a;&#x1038;&#x1000;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038; &#x1021;&#x1019;&#x100a;&#x103a;&#x200b;&#x1019;&#x103b;&#x102c;&#x1038;&#x200b;&#x1015;&#x103c;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038;&#x101c;&#x1032;&#x200b;&#x1001;&#x1032;&#x1037;&#x200b;&#x101e;&#x100a;&#x103a;&#x104b; &#x1021;&#x102c;&#x100f;&#x102c;&#x200b;&#x101b;&#x200b;&#x1005;&#x1005;&#x103a;&#x200b;&#x1021;&#x1005;&#x102d;&#x102f;&#x1038;&#x101b;&#x200b;&#x1021;&#x102c;&#x1038; &#x1021;&#x101e;&#x102d;&#x200b;&#x1021;&#x1019;&#x103e;&#x1010;&#x103a; &#x1019;&#x200b;&#x1015;&#x103c;&#x102f;&#x200b;&#x101e;&#x1031;&#x102c; &#x1021;&#x1016;&#x103d;&#x1032;&#x1037;&#x200b;&#x1021;&#x1005;&#x100a;&#x103a;&#x1038;&#x200b;&#x1019;&#x103b;&#x102c;&#x1038;&#x200b;&#x1000; &#x1018;&#x102c;&#x1038;&#x200b;&#x1019;&#x102c;&#x1038; ("Burma") &#x101f;&#x102f;&#x200b;&#x101e;&#x102c; &#x1021;&#x101e;&#x102d;&#x200b;&#x1021;&#x1019;&#x103e;&#x1010;&#x103a;&#x1015;&#x103c;&#x102f;&#x200b; &#x101e;&#x102f;&#x1036;&#x1038;&#x1005;&#x103d;&#x1032;&#x1001;&#x1032;&#x1037;&#x200b;&#x200b;&#x101e;&#x100a;&#x103a;&#x104b; &#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x101c;&#x1036;&#x1000;&#x102d;&#x102f;&#x101c;&#x100a;&#x103a;&#x1038; &#x101a;&#x1001;&#x1004;&#x103a; &#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a; &#x1021;&#x1031;&#x1038;&#x1001;&#x103b;&#x1019;&#x103a;&#x1038;&#x101e;&#x102c;&#x101a;&#x102c;&#x101b;&#x1031;&#x1038;&#x1014;&#x103e;&#x1004;&#x1037;&#x103a; &#x1016;&#x103d;&#x1036;&#x1037;&#x1016;&#x103c;&#x102d;&#x102f;&#x1038;&#x101b;&#x1031;&#x1038;&#x1000;&#x1031;&#x102c;&#x1004;&#x103a;&#x1005;&#x102e;&#x1021;&#x1005;&#x102d;&#x102f;&#x1038;&#x101b;&#x200b;&#x101c;&#x1000;&#x103a;&#x1011;&#x1000;&#x103a; &#x1042;&#x200b;&#x1040;&#x2060;&#x1040;&#x200b;&#x1048; &#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1016;&#x103d;&#x1032;&#x1037;&#x200b;&#x1005;&#x100a;&#x103a;&#x1038;&#x200b;&#x1015;&#x102f;&#x1036; &#x1021;&#x1001;&#x103c;&#x1031;&#x200b;&#x1001;&#x1036; &#x1025;&#x1015;&#x1012;&#x1031;&#x1010;&#x103d;&#x1004;&#x103a; &#x1015;&#x103c;&#x100b;&#x1039;&#x100c;&#x102c;&#x1014;&#x103a;&#x1038;&#x200b;&#x1011;&#x102c;&#x1038;&#x200b;&#x101e;&#x100a;&#x1037;&#x103a; &#x1015;&#x103c;&#x100a;&#x103a;&#x1011;&#x1031;&#x102c;&#x1004;&#x103a;&#x200b;&#x1005;&#x102f; &#x101e;&#x1019;&#x1039;&#x1019;&#x1010; &#x1019;&#x103c;&#x1014;&#x103a;&#x1019;&#x102c;&#x200b;&#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x200b;&#x1004;&#x1036;&#x1010;&#x1031;&#x102c;&#x103a;&#x200b;&#x1021;&#x101c;&#x1036; &#x1016;&#x103c;&#x1004;&#x1037;&#x103a; &#x1042;&#x200b;&#x1040;&#x200b;&#x1041;&#x200b;&#x1040; &#x1001;&#x102f;&#x200b;&#x1014;&#x103e;&#x1005;&#x103a; &#x1021;&#x1031;&#x102c;&#x1000;&#x103a;&#x1010;&#x102d;&#x102f;&#x1018;&#x102c;&#x200b;&#x101c; &#x1042;&#x200b;&#x1041; &#x101b;&#x1000;&#x103a;&#x200b;&#x1014;&#x1031;&#x1037;&#x200b;&#x1010;&#x103d;&#x1004;&#x103a; &#x1021;&#x101c;&#x1036;&#x1005;&#x1010;&#x1004;&#x103a;&#x200b;&#x101c;&#x103d;&#x103e;&#x1004;&#x1037;&#x103a;&#x200b;&#x1011;&#x1030;&#x200b;&#x1001;&#x103c;&#x1004;&#x103a;&#x1038; &#x1021;&#x1001;&#x1019;&#x103a;&#x1038;&#x1021;&#x1014;&#x102c;&#x1038;&#x200b;&#x1019;&#x103b;&#x102c;&#x1038;&#x200b;&#x1000;&#x102d;&#x102f; &#x1014;&#x102d;&#x102f;&#x1004;&#x103a;&#x1004;&#x1036;&#x200b;&#x1010;&#x200b;&#x101d;&#x103e;&#x1019;&#x103a;&#x1038; &#x1000;&#x103b;&#x1004;&#x103a;&#x1038;&#x1015;&#x200b;&#x1000;&#x102c; &#x1021;&#x1005;&#x102c;&#x1038;&#x1011;&#x102d;&#x102f;&#x1038;&#x104d; &#x1015;&#x103c;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038;&#x101c;&#x1032; &#x1021;&#x101e;&#x102f;&#x1036;&#x1038;&#x1001;&#x1032;&#x1037;&#x1015;&#x103c;&#x102f;&#x200b;&#x101e;&#x100a;&#x103a;&#x104b;
 </div>
 
 KHMER
-<div style="font-family:\'Khmer OS\'; line-height: 1.9em; ">
+<div style="font-family:\'Khmer OS\'; ">
 &#x1784;&#x17D2;&#x1782;&#x17D2;&#x179A;
 &#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8;
 &#x1784;&#x17d2;&#x1782;&#x17d2;&#x179a;&#x17c4;&#x17c7;
 </div>
-<div style="font-family:\'Khmer OS\'; line-height: 1.9em; ">
+<div style="font-family:\'Khmer OS\'; ">
 &#x1799;&#x17bb;&#x179c;&#x1787;&#x1793;&#x200b;&#x1798;&#x17d2;&#x1793;&#x17b6;&#x1780;&#x17cb;&#x200b;&#x1794;&#x17b6;&#x1793;&#x200b;&#x179f;&#x17d2;&#x179b;&#x17b6;&#x1794;&#x17cb;&#x200b;&#x178a;&#x17c4;&#x1799;&#x200b;&#x1782;&#x17d2;&#x179a;&#x17b6;&#x1794;&#x17cb;&#x1780;&#x17b6;&#x17c6;&#x1797;&#x17d2;&#x179b;&#x17be;&#x1784;&#x200b;&#x179a;&#x1794;&#x179f;&#x17cb;&#x200b;&#x1794;&#x17c9;&#x17bc;&#x179b;&#x17b7;&#x179f; &#x1793;&#x17b7;&#x1784;&#x200b;&#x1794;&#x17b8;&#x1793;&#x17b6;&#x1780;&#x17cb;&#x200b;&#x1795;&#x17d2;&#x179f;&#x17c1;&#x1784;&#x1791;&#x17c0;&#x178f;&#x200b;&#x179a;&#x1784;&#x179a;&#x1794;&#x17bd;&#x179f; &#x1793;&#x17c5;&#x1780;&#x17d2;&#x1793;&#x17bb;&#x1784;&#x200b;&#x1780;&#x17b6;&#x179a;&#x1794;&#x17d2;&#x179a;&#x1788;&#x1798;&#x200b;&#x1798;&#x17bb;&#x1781;&#x200b;&#x178a;&#x17b6;&#x1780;&#x17cb;&#x1782;&#x17d2;&#x1793;&#x17b6;&#x200b;&#x178a;&#x17b6;&#x1785;&#x17cb;&#x178a;&#x17c4;&#x1799;&#x17a1;&#x17c2;&#x1780;&#x200b;&#x1782;&#x17d2;&#x1793;&#x17b6;&#x1798;&#x17bd;&#x1799; &#x179a;&#x179c;&#x17b6;&#x1784;&#x200b;&#x1780;&#x17d2;&#x179a;&#x17bb;&#x1798;&#x200b;&#x1799;&#x17bb;&#x179c;&#x1787;&#x1793;&#x200b;&#x1798;&#x17bd;&#x1799;&#x200b;&#x1780;&#x17d2;&#x179a;&#x17bb;&#x1798; &#x1787;&#x17b6;&#x1798;&#x17bd;&#x1799;&#x200b;&#x1794;&#x17c9;&#x17bc;&#x179b;&#x17b7;&#x179f; &#x1793;&#x17c5;&#x200b;&#x1798;&#x17d2;&#x178f;&#x17bb;&#x17c6;&#x200b;&#x179f;&#x17d2;&#x1796;&#x17b6;&#x1793;&#x200b;&#x1780;&#x17d2;&#x1794;&#x17b6;&#x179b;&#x1790;&#x17d2;&#x1793;&#x179b;&#x17cb;&#x17d4; &#x1793;&#x17c1;&#x17c7;&#x200b;&#x1794;&#x17be;&#x178f;&#x17b6;&#x1798;&#x200b;&#x1796;&#x17d0;&#x178f;&#x17cc;&#x1798;&#x17b6;&#x1793;&#x200b;&#x1796;&#x17b8;&#x200b;&#x179b;&#x17c4;&#x1780;&#x200b; &#x1785;&#x17b6;&#x1793;&#x17cb; &#x179f;&#x17b6;&#x179c;&#x17c9;&#x17c1;&#x178f; &#x1798;&#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8;&#x200b;&#x179f;&#x17ca;&#x17be;&#x1794;&#x17a2;&#x1784;&#x17d2;&#x1780;&#x17c1;&#x178f;&#x200b;&#x179a;&#x1794;&#x179f;&#x17cb;&#x200b;&#x17a2;&#x1784;&#x17d2;&#x1782;&#x1780;&#x17b6;&#x179a;&#x200b;&#x179f;&#x17b7;&#x1791;&#x17d2;&#x1792;&#x17b7;&#x1798;&#x1793;&#x17bb;&#x179f;&#x17d2;&#x179f;&#x200b;&#x17a2;&#x17b6;&#x178a;&#x17a0;&#x17bb;&#x1780; &#x178a;&#x17c2;&#x179b;&#x200b;&#x179c;&#x178f;&#x17d2;&#x178f;&#x1798;&#x17b6;&#x1793;&#x200b;&#x1793;&#x17c5;&#x200b;&#x1780;&#x1793;&#x17d2;&#x179b;&#x17c2;&#x1784;&#x200b;&#x1780;&#x1793;&#x17d2;&#x179b;&#x17c2;&#x1784;&#x200b;&#x1780;&#x17be;&#x178f;&#x17a0;&#x17c1;&#x178f;&#x17bb; &#x1793;&#x17c5;&#x200b;&#x1799;&#x1794;&#x17cb;&#x200b;&#x1790;&#x17d2;&#x1784;&#x17c3;&#x200b;&#x17a2;&#x17b6;&#x1791;&#x17b7;&#x178f;&#x17d2;&#x1799;&#x200b;&#x1791;&#x17b8; &#x17e1;&#x17e5; &#x1780;&#x1789;&#x17d2;&#x1789;&#x17b6;&#x1793;&#x17c1;&#x17c7;&#x17d4;
 </div>
 
@@ -423,12 +451,12 @@ THAANA
 
 
 LAO 
-<div style="font-family:Dhyana; font-size: 12pt; line-height: 1.6em;">
+<div style="font-family:Dhyana; font-size: 12pt;">
 &#xeaa;&#xeb2;&#xe97;&#xeb2;&#xea5;&#xeb0;&#xe99;&#xeb0;&#xea5;&#xeb1;&#xe94; &#xe9b;&#xeb0;&#xe8a;&#xeb2;&#xe97;&#xeb4;&#xe9b;&#xeb0;&#xec4;&#xe95; &#xe9b;&#xeb0;&#xe8a;&#xeb2;&#xe8a;&#xebb;&#xe99;&#xea5;&#xeb2;&#xea7; (&#xe84;&#xeb3;&#xec0;&#xe84;&#xebb;&#xec9;&#xeb2;: &#xeaa;&#xeb2;&#xe97;&#xeb2;&#xea3;&#xe99;&#xea3;&#xeb1;&#xe96;&#xe9b;&#xe8a;&#xeb2;&#xe97;&#xeb4;&#xe9b;&#xe95;&#xeb1;&#xe8d;&#xe9b;&#xe8a;&#xeb2;&#xe8a;&#xebb;&#xe99;&#xea5;&#xeb2;&#xea7;[&#xed1;]) &#xeab;&#xebc;&#xeb7; &#xeaa;&#xe9b;&#xe9b; &#xea5;&#xeb2;&#xea7; &#xe95;&#xeb1;&#xec9;&#xe87;&#xea2;&#xeb9;&#xec8;&#xe97;&#xeb4;&#xe94;&#xe95;&#xeb2;&#xec0;&#xea7;&#xeb1;&#xe99;&#xead;&#xead;&#xe81;&#xeaa;&#xebd;&#xe87;&#xec3;&#xe95;&#xec9;&#xe82;&#xead;&#xe87;&#xe97;&#xeb0;&#xea7;&#xeb5;&#xe9a;&#xead;&#xeb2;&#xe8a;&#xeb5;, &#xea2;&#xeb9;&#xec8;&#xec3;&#xe88;&#xe81;&#xeb2;&#xe87;&#xe82;&#xead;&#xe87;&#xec1;&#xeab;&#xebc;&#xea1;&#xead;&#xeb4;&#xe99;&#xe94;&#xeb9;&#xe88;&#xeb5;&#xe99;&#xea5;&#xeb0;&#xeab;&#xea7;&#xec8;&#xeb2;&#xe87;&#xec0;&#xeaa;&#xeb1;&#xec9;&#xe99;&#xe82;&#xeb0;&#xedc;&#xeb2;&#xe99;&#xe97;&#xeb5; 14 - 23 &#xead;&#xebb;&#xe87;&#xeaa;&#xeb2;&#xec0;&#xedc;&#xeb7;&#xead; &#xec1;&#xea5;&#xeb0; &#xec0;&#xeaa;&#xeb1;&#xec9;&#xe99;&#xec1;&#xea7;&#xe87;&#xe97;&#xeb5; 100-108 &#xead;&#xebb;&#xe87;&#xeaa;&#xeb2; &#xeaa;&#xe9b;&#xe9b; &#xea5;&#xeb2;&#xea7;&#xea1;&#xeb5;&#xec0;&#xe99;&#xeb7;&#xec9;&#xead;&#xe97;&#xeb5;&#xec8;&#xe97;&#xeb1;&#xe87;&#xedd;&#xebb;&#xe94; 236.800 &#xe95;&#xeb2;&#xea5;&#xeb2;&#xe87;&#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94; &#xec0;&#xe9b;&#xeb1;&#xe99;&#xe9b;&#xeb0;&#xec0;&#xe97;&#xe94;&#xe97;&#xeb5;&#xec8;&#xe9a;&#xecd;&#xec8;&#xea1;&#xeb5;&#xe97;&#xeb2;&#xe87;&#xead;&#xead;&#xe81;&#xeaa;&#xeb9;&#xec8;&#xe97;&#xeb0;&#xec0;&#xea5;, &#xea1;&#xeb5;&#xe8a;&#xeb2;&#xe8d;&#xec1;&#xe94;&#xe99;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a; &#xeaa;&#xeb2;&#xe97;&#xeb2;&#xea5;&#xeb0;&#xe99;&#xeb0;&#xea5;&#xeb1;&#xe94;&#xe9b;&#xeb0;&#xe8a;&#xeb2;&#xe8a;&#xebb;&#xe99;&#xe88;&#xeb5;&#xe99; (505 &#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94;), &#xe97;&#xeb4;&#xe94;&#xec3;&#xe95;&#xec9;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a;&#xea5;&#xeb2;&#xe8a;&#xeb0;&#xead;&#xeb2;&#xe99;&#xeb2;&#xe88;&#xeb1;&#xe81;&#xe81;&#xeb3;&#xe9b;&#xeb9;&#xec0;&#xe88;&#xe8d; (435 &#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94;), &#xe97;&#xeb4;&#xe94;&#xe95;&#xeb2;&#xec0;&#xea7;&#xeb1;&#xe99;&#xead;&#xead;&#xe81;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a; &#xeaa;&#xeb2;&#xe97;&#xeb2;&#xea5;&#xeb0;&#xe99;&#xeb0;&#xea5;&#xeb1;&#xe94;&#xeaa;&#xeb1;&#xe87;&#xe84;&#xebb;&#xea1;&#xe99;&#xeb4;&#xe8d;&#xebb;&#xea1;&#xeab;&#xea7;&#xebd;&#xe94;&#xe99;&#xeb2;&#xea1; ( 2.069 &#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94; ), &#xe97;&#xeb4;&#xe94;&#xe95;&#xeb2;&#xec0;&#xea7;&#xeb1;&#xe99;&#xe95;&#xebb;&#xe81;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a;&#xea5;&#xeb2;&#xe8a;&#xeb0;&#xead;&#xeb2;&#xe99;&#xeb2;&#xe88;&#xeb1;&#xe81;&#xec4;&#xe97; ( 1.385 &#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94; ), &#xec1;&#xea5;&#xeb0; &#xe97;&#xeb4;&#xe94;&#xe95;&#xeb2;&#xec0;&#xea7;&#xeb1;&#xe99;&#xe95;&#xebb;&#xe81;&#xeaa;&#xebd;&#xe87;&#xec0;&#xedc;&#xeb7;&#xead;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a; &#xeaa;&#xeb2;&#xe97;&#xeb2;&#xea5;&#xeb0;&#xe99;&#xeb0;&#xea5;&#xeb1;&#xe94;&#xec1;&#xeab;&#xec8;&#xe87;&#xeaa;&#xeb0;&#xeab;&#xeb0;&#xe9e;&#xeb2;&#xe9a;&#xea1;&#xebd;&#xe99;&#xea1;&#xeb2; ( 236 &#xe81;&#xeb4;&#xec2;&#xea5;&#xec1;&#xea1;&#xeb1;&#xe94; ), &#xeaa;.&#xe9b;.&#xe9b;.&#xea5;&#xeb2;&#xea7; &#xec0;&#xe9b;&#xeb1;&#xe99;&#xe9b;&#xeb0;&#xec0;&#xe97;&#xe94;&#xe94;&#xebd;&#xea7;&#xec3;&#xe99;&#xe9e;&#xeb2;&#xe81;&#xe9e;&#xeb7;&#xec9;&#xe99;&#xe99;&#xeb5;&#xec9;&#xe97;&#xeb5;&#xec8;&#xe9a;&#xecd;&#xec8;&#xea1;&#xeb5;&#xe8a;&#xeb2;&#xe8d;&#xec1;&#xe94;&#xe99;&#xe95;&#xeb4;&#xe94;&#xe81;&#xeb1;&#xe9a;&#xe97;&#xeb0;&#xec0;&#xea5;.
 </div>
 
 THAI
-<div style="font-family:Garuda; font-size: 12pt; line-height: 1.6em;">
+<div style="font-family:Garuda; font-size: 12pt;">
 "&#xe0b;&#xe31;&#xe21;&#xe15;&#xe34;&#xe07;" &#xe40;&#xe1b;&#xe47;&#xe19;&#xe40;&#xe1e;&#xe25;&#xe07;&#xe02;&#xe2d;&#xe07;&#xe27;&#xe07;&#xe40;&#xe14;&#xe2d;&#xe30;&#xe1a;&#xe35;&#xe15;&#xe40;&#xe17;&#xe34;&#xe25;&#xe2a;&#xe4c; &#xe43;&#xe19;&#xe1b;&#xe35; &#xe04;.&#xe28;. 1969 &#xe40;&#xe1b;&#xe47;&#xe19;&#xe40;&#xe1e;&#xe25;&#xe07;&#xe17;&#xe35;&#xe48;&#xe1a;&#xe23;&#xe23;&#xe08;&#xe38;&#xe2d;&#xe22;&#xe39;&#xe48;&#xe43;&#xe19;&#xe2d;&#xe31;&#xe25;&#xe1a;&#xe31;&#xe49;&#xe21;&#xe0a;&#xe38;&#xe14; &#xe41;&#xe2d;&#xe1a;&#xe1a;&#xe35;&#xe42;&#xe23;&#xe14; &#xe40;&#xe1e;&#xe25;&#xe07;&#xe19;&#xe35;&#xe49;&#xe40;&#xe1b;&#xe47;&#xe19;&#xe40;&#xe1e;&#xe25;&#xe07;&#xe41;&#xe23;&#xe01;&#xe17;&#xe35;&#xe48;&#xe0b;&#xe34;&#xe07;&#xe40;&#xe01;&#xe34;&#xe25;&#xe2b;&#xe19;&#xe49;&#xe32;&#xe40;&#xe2d;&#xe17;&#xe35;&#xe48;&#xe08;&#xe2d;&#xe23;&#xe4c;&#xe08; &#xe41;&#xe2e;&#xe23;&#xe4c;&#xe23;&#xe34;&#xe2a;&#xe31;&#xe19;&#xe40;&#xe02;&#xe35;&#xe22;&#xe19; &#xe41;&#xe25;&#xe30;&#xe16;&#xe37;&#xe2d;&#xe40;&#xe1b;&#xe47;&#xe19;&#xe0b;&#xe34;&#xe07;&#xe40;&#xe01;&#xe34;&#xe25;&#xe41;&#xe23;&#xe01;&#xe02;&#xe2d;&#xe07;&#xe40;&#xe14;&#xe2d;&#xe30;&#xe1a;&#xe35;&#xe15;&#xe40;&#xe17;&#xe34;&#xe25;&#xe2a;&#xe4c;&#xe17;&#xe35;&#xe48;&#xe21;&#xe35;&#xe40;&#xe1e;&#xe25;&#xe07;&#xe17;&#xe35;&#xe48;&#xe21;&#xe35;&#xe2d;&#xe22;&#xe39;&#xe48;&#xe41;&#xe25;&#xe49;&#xe27;&#xe43;&#xe19;&#xe2d;&#xe31;&#xe25;&#xe1a;&#xe31;&#xe49;&#xe21;&#xe1a;&#xe23;&#xe23;&#xe08;&#xe38;&#xe2d;&#xe22;&#xe39;&#xe48;&#xe14;&#xe49;&#xe27;&#xe22; &#xe17;&#xe31;&#xe49;&#xe07;&#xe40;&#xe1e;&#xe25;&#xe07; "&#xe0b;&#xe31;&#xe21;&#xe15;&#xe34;&#xe07;" &#xe41;&#xe25;&#xe30;&#xe40;&#xe1e;&#xe25;&#xe07; "&#xe04;&#xe31;&#xe21;&#xe17;&#xe39;&#xe40;&#xe01;&#xe15;&#xe40;&#xe15;&#xe2d;&#xe23;&#xe4c;" &#xe17;&#xe35;&#xe48;&#xe2d;&#xe22;&#xe39;&#xe48;&#xe43;&#xe19;&#xe2d;&#xe31;&#xe25;&#xe1a;&#xe31;&#xe49;&#xe21; &#xe41;&#xe2d;&#xe1a;&#xe1a;&#xe35;&#xe42;&#xe23;&#xe14; &#xe41;&#xe25;&#xe30;&#xe40;&#xe1e;&#xe25;&#xe07; "&#xe0b;&#xe31;&#xe21;&#xe15;&#xe34;&#xe07;" &#xe16;&#xe37;&#xe2d;&#xe40;&#xe1b;&#xe47;&#xe19;&#xe40;&#xe1e;&#xe25;&#xe07;&#xe40;&#xe14;&#xe35;&#xe22;&#xe27;&#xe17;&#xe35;&#xe48;&#xe41;&#xe2e;&#xe23;&#xe4c;&#xe23;&#xe34;&#xe2a;&#xe31;&#xe19;&#xe41;&#xe15;&#xe48;&#xe07;&#xe41;&#xe25;&#xe49;&#xe27;&#xe02;&#xe36;&#xe49;&#xe19;&#xe2d;&#xe31;&#xe19;&#xe14;&#xe31;&#xe1a; 1 &#xe1a;&#xe19;&#xe0a;&#xe32;&#xe23;&#xe4c;&#xe15;&#xe2d;&#xe40;&#xe21;&#xe23;&#xe34;&#xe01;&#xe31;&#xe19;&#xe02;&#xe13;&#xe30;&#xe17;&#xe35;&#xe48;&#xe22;&#xe31;&#xe07;&#xe2d;&#xe22;&#xe39;&#xe48;&#xe43;&#xe19;&#xe27;&#xe07;&#xe40;&#xe14;&#xe2d;&#xe30;&#xe1a;&#xe35;&#xe15;&#xe40;&#xe17;&#xe34;&#xe25;&#xe2a;&#xe4c;
 </div>
 
@@ -441,7 +469,7 @@ SINHALA
 
 
 TIBETAN
-<div style="font-family:Jomolhari; font-size: 16pt; line-height: 1.6;">
+<div style="font-family:Jomolhari; font-size: 16pt;">
 &#xf04;&#xf0d;&#xf4f;&#xf51;&#xfb1;&#xf50;&#xf71;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf42;&#xf4f;&#xf7a;&#xf42;&#xf4f;&#xf7a;&#xf54;&#xf71;&#xf62;&#xf42;&#xf4f;&#xf7a;&#xf54;&#xf71;&#xf62;&#xf66;&#xf7e;&#xf42;&#xf4f;&#xf7a;&#xf56;&#xf7c;&#xf52;&#xf72;&#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;
 &#xf68;&#xf7c;&#xf7e;&#xf58;&#xf74;&#xf53;&#xf72;&#xf58;&#xf74;&#xf53;&#xf72;&#xf58;&#xf67;&#xf71;&#xf58;&#xf74;&#xf53;&#xf72;&#xf61;&#xf7a;&#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf68;&#xf71;&#xf58;&#xf72;&#xf52;&#xf7a;&#xf5d;&#xf71;&#xf67;&#xfb2;&#xf71;&#xf72;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf58;&#xf4e;&#xf72;&#xf54;&#xf51;&#xfa8;&#xf7a;&#xf67;&#xf71;&#xf74;&#xf7e;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf68;&#xf71;&#xf7f;&#xf67;&#xf71;&#xf74;&#xf7e;&#xf0b;
 &#xf56;&#xf5b;&#xfb2;&#xf42;&#xf74;&#xf62;&#xf74;&#xf54;&#xf51;&#xfa8;&#xf66;&#xf72;&#xf51;&#xfa2;&#xf72;&#xf67;&#xf71;&#xf74;&#xf7e;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf68;&#xf71;&#xf58;&#xf62;&#xf71;&#xf4e;&#xf72;&#xf5b;&#xfb2;&#xf72;&#xf5d;&#xf53;&#xf4f;&#xf72;&#xf61;&#xf7a;&#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf5d;&#xf42;&#xf72;&#xf64;&#xf71;&#xf62;&#xf72;&#xf58;&#xf74;&#xf7e;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf0b;
@@ -449,9 +477,15 @@ TIBETAN
 &#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf68;&#xf71;&#xf58;&#xfb2;&#xf72;&#xf4f;&#xf71;&#xf68;&#xf71;&#xf61;&#xf74;&#xf62;&#xfa1;&#xf51;&#xf7a;&#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;&#xf68;&#xf7c;&#xf7e;&#xf58;&#xf62;&#xf72;&#xf59;&#xfb1;&#xf7a;&#xf58;&#xf7e;&#xf66;&#xfad;&#xf71;&#xf67;&#xf71;&#xf0d;
 </div>
 
-<pagebreak />
+TAI THAM
+<div style="font-family:\'lanna alif\'; font-size: 16pt">
+&#x1a22;&#x1a76;&#x1a63;&#x1a27;&#x1a6e;&#x1a62;&#x1a76;&#x1a63;&#x1a38;&#x1a6e;&#x1a62;&#x1a60;&#x1a36;&#x1a48;&#x1a63;&#x1a60;&#x1a45;&#x1a29;&#x1a60;&#x1a3f;&#x1a26;&#x1a49;&#x1a60;&#x1a3e;&#x1a72;&#x1a75; &#x1a49;&#x1a60;&#x1a3e;&#x1a6f;&#x1a37;&#x1a74;&#x1a75;&#x1a6c;&#x1a34;&#x1a6e;&#x1a62;&#x1a75;&#x1a63;&#x1a2f;&#x1a72;&#x1a20;&#x1a74;&#x1a76;&#x1a6c;&#x1a27;&#x1a61;&#x1a38;&#x1a6e;&#x1a62;&#x1a60;&#x1a36;&#x1a48;&#x1a63;&#x1a60;&#x1a45;&#x1a43;&#x1a6f;&#x1a76;&#x1a60;&#x1a45; &#x1a32;&#x1a67;&#x1a60;&#x1a26;&#x1a45;&#x1a62;&#x1a60;&#x1a36;&#x1a3e;&#x1a66;&#x1a37;&#x1a75;&#x1a64;&#x1a60;&#x1a45;&#x1a3e;&#x1a63;&#x1a4b;&#x1a6f;&#x1a75;&#x1a60;&#x1a45;
+&#x1a3e;&#x1a63;&#x1a4b;&#x1a6a;&#x1a76;&#x1a3e;&#x1a63;&#x1a2a;&#x1a6f;&#x1a60;&#x1a45; &#x1a38;&#x1a6e;&#x1a62;&#x1a60;&#x1a36;&#x1a24;&#x1a6b;&#x1a60;&#x1a36;&#x1a43;&#x1a3b;&#x1a6a;&#x1a41; &#x1a22;&#x1a76;&#x1a63;&#x1a27;&#x1a6e;&#x1a62;&#x1a76;&#x1a63;&#x1a27;&#x1a61;&#x1a6e;&#x1a43;&#x1a65;&#x1a6c;&#x1a20;&#x1a4b;&#x1a6e;&#x1a62;&#x1a63;&#x1a39;&#x1a71; &#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a37;&#x1a75;&#x1a64;&#x1a60;&#x1a45;&#x1a29;&#x1a60;&#x1a3f;&#x1a26;&#x1a41;&#x1a63;&#x1a60;&#x1a3f;&#x1a29;&#x1a68;&#x1a75;&#x1a20;&#x1a6f;&#x1a76;&#x1a60;&#x1a45;&#x1a3e;&#x1a63;&#x1a43;&#x1a6a;&#x1a41; &#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a20;&#x1a6c;&#x1a26;&#x1a24;&#x1a6b;&#x1a60;&#x1a36;&#x1a3b;&#x1a6f;&#x1a75;&#x1a22;&#x1a60;&#x1a3f;&#x1a45;&#x1a28;&#x1a69;&#x1a36; &#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a24;&#x1a74;&#x1a63;&#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a3e;&#x1a6a;&#x1a41; &#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a48;&#x1a6b;&#x1a60;&#x1a3e;&#x1a4b;&#x1a76;&#x1a63;&#x1a60;&#x1a3f;&#x1a3e;&#x1a66; &#x1a3b;&#x1a6e;&#x1a65;&#x1a75;&#x1a60;&#x1a36;&#x1a37;&#x1a6c;&#x1a20;&#x1a45;&#x1a75;&#x1a64;&#x1a27;&#x1a61;&#x1a3e;&#x1a63;&#x1a22;&#x1a74;&#x1a6c;&#x1a22;&#x1a76;&#x1a63;&#x1a27;&#x1a6e;&#x1a62;&#x1a76;&#x1a63;&#x1a20;&#x1a74;&#x1a6c;&#x1a41;&#x1a74;&#x1a6c;&#x1a3e;&#x1a63;&#x1a43;&#x1a6f;&#x1a76;&#x1a60;&#x1a45;&#x1a38;&#x1a6e;&#x1a62;&#x1a60;&#x1a36;&#x1a38;&#x1a66;
+</div>
 
-<h3>Line breaking</h3>
+<pagebreak odd-footer-name="myHTMLbengali" odd-footer-value="1" even-footer-name="myHTMLbengali" even-footer-value="1" pagenumstyle="bengali" />
+
+<h3>Dictionary Line breaking</h3>
 <p>Lao, Thai and Khmer text does not have space between words. By default, mPDF 6 uses word dictionaries to determine appropriate opportunites for line-breaks. Users may turn this function off using the configurable variable <span class="code">useDictionaryLBR</span>.</p>
 
 <p>Alternatively users can insert the character U+200B (zero-width space) in the text to mark line-breaking opportunities manually.</p>
@@ -472,7 +506,6 @@ TIBETAN
 <p>As long as you select the right font for the input text, all of them work fine in mPDF:</p>
 
 
-<div style="line-height: 2.1em;">
 <p class="example" style="font-family: Tharlon; margin-bottom:0;">Tharlon: &#x1012;&#x102e;&#x101b;&#x1000;&#x103a;&#x1015;&#x102d;&#x102f;&#x1004;&#x103a;&#x1038;&#x1019;&#x103e;&#x102c; &#x1027;&#x101b;&#x102c;&#x1016;&#x1031;&#x102c;&#x1004;&#x1037;&#x103a;&#x1000;&#x102d;&#x102f; &#x101a;&#x1030;&#x1014;&#x102e;&#x1000;&#x102f;&#x1012;&#x103a;&#x1021;&#x1016;&#x103c;&#x1005;&#x103a; &#x101b;&#x100a;&#x103a;&#x100a;&#x103d;&#x103e;&#x1014;&#x103a;&#x1038;&#x1015;&#x103c;&#x1031;&#x102c;&#x1006;&#x102d;&#x102f;&#x1014;&#x1031;&#x1000;&#x103c;&#x1010;&#x102c; &#x1010;&#x103d;&#x1031;&#x1037;&#x101b;&#x101c;&#x102d;&#x102f;&#x1037; &#x1027;&#x101b;&#x102c;&#x101f;&#x102c; &#x101a;&#x1030;&#x1014;&#x102e;&#x1000;&#x102f;&#x1012;&#x103a; &#x1019;&#x1016;&#x103c;&#x1005;&#x103a;&#x1000;&#x103c;&#x1031;&#x102c;&#x1004;&#x103a;&#x1038;&#x1014;&#x1032;&#x1037; &#x1018;&#x102c;&#x101c;&#x102d;&#x102f;&#x1037;&#x1019;&#x1016;&#x103c;&#x1005;&#x103a;&#x101b;&#x1010;&#x102c;&#x101c;&#x1032;&#x1006;&#x102d;&#x102f;&#x1010;&#x102c; &#x1021;&#x1010;&#x102d;&#x102f;&#x1015;&#x1032; &#x101b;&#x103e;&#x1004;&#x103a;&#x1038;&#x1015;&#x102b;&#x1019;&#x101a;&#x103a;&#x104b; &#x101a;&#x1030;&#x1014;&#x102e;&#x1000;&#x102f;&#x1012;&#x103a;&#x1016;&#x103c;&#x1005;&#x103a;&#x1016;&#x102d;&#x102f;&#x1037; - &#x1041;&#x104b; &#x101a;&#x1030;&#x1014;&#x102e;&#x1000;&#x102f;&#x1012;&#x103a; &#x1000;&#x102f;&#x1012;&#x103a;&#x1015;&#x103d;&#x102d;&#x102f;&#x1004;&#x1037;&#x103a;&#x1014;&#x1032;&#x1037; &#x1000;&#x102d;&#x102f;&#x1000;&#x103a;&#x100a;&#x102e;&#x101b;&#x1015;&#x102b;&#x1019;&#x101a;&#x103a;&#x104b;
 &#x1042;&#x104b; &#x101a;&#x1030;&#x1014;&#x102e;&#x1000;&#x102f;&#x1012;&#x103a; &#x1005;&#x102c;&#x101c;&#x102f;&#x1036;&#x1038;&#x1005;&#x102e;&#x1015;&#x102f;&#x1036; (Encoding) &#x1014;&#x1032;&#x1037; &#x1000;&#x102d;&#x102f;&#x1000;&#x103a;&#x100a;&#x102e;&#x101b;&#x1015;&#x102b;&#x1019;&#x101a;&#x103a;&#x104b;</p>
 
@@ -489,7 +522,6 @@ TIBETAN
 <div style="font-size: 0.85em">from https://mya.wordpress.org/</div>
 
 
-</div>
 
 <h3>lang selector</h3>
 <p>mPDF 6 supports use of the lang selector in CSS. All of the following are supported:</p>
@@ -600,6 +632,149 @@ Use $this-&gt;autoLangToFont instead of $this-&gt;useLang
 </p>
 
 
+<h3>Bidi Bidirectional text</h3>
+
+<p>The algorithm to handle bi-directional text (right to left) has been completely rewritten. Text is now processed across the whole paragraph ignoring inline tags. There is also full support for the methods to control/override the display.</p>
+
+
+<p>1) The following Unicode characters are supported, and can be inserted directly in the text as HTML entities:</p>
+<table style="font-size:85%">
+<tr>
+<td>LRE</td><td>U+202A</td><td>LEFT-TO-RIGHT EMBEDDING</td><td>&amp;#x202A;</td>
+</tr>
+<tr>
+<td>RLE</td><td>U+202B</td><td>RIGHT-TO-LEFT EMBEDDING</td><td>&amp;#x202B;</td>
+</tr>
+<tr>
+<td>LRO</td><td>U+202D</td><td>LEFT-TO-RIGHT OVERRIDE</td><td>&amp;#x202D;</td>
+</tr>
+<tr>
+<td>RLO</td><td>U+202E</td><td>RIGHT-TO-LEFT OVERRIDE</td><td>&amp;#x202E;</td>
+</tr>
+<tr>
+<td>PDF</td><td>U+202C</td><td>POP DIRECTIONAL FORMATTING</td><td>&amp;#x202C;</td>
+</tr>
+<tr>
+<td></td><td></td><td></td><td></td>
+</tr>
+<tr>
+<td>LRI</td><td>U+2066</td><td>LEFT-TO-RIGHT ISOLATE</td><td>&amp;#x2066;</td>
+</tr>
+<tr>
+<td>RLI</td><td>U+2067</td><td>RIGHT-TO-LEFT ISOLATE</td><td>&amp;#x2067;</td>
+</tr>
+<tr>
+<td>FSI</td><td>U+2068</td><td>FIRST STRONG ISOLATE</td><td>&amp;#x2068;</td>
+</tr>
+<tr>
+<td>PDI</td><td>U+2069</td><td>POP DIRECTIONAL ISOLATE</td><td>&amp;#x2069;</td>
+</tr>
+<tr>
+<td></td><td></td><td></td><td></td>
+</tr>
+<tr>
+<td>LRM</td><td>U+200E</td><td>LEFT-TO-RIGHT MARK</td><td>&amp;#x200E;</td>
+</tr>
+<tr>
+<td>RLM</td><td>U+200F</td><td>RIGHT-TO-LEFT MARK</td><td>&amp;#x200F;</td>
+</tr>
+</table>
+
+<p>2) The following HTML tags are supported:
+<ul>
+<li>&lt;bdo&gt;  (NB the "dir" attribute is mandatory on &lt;bdo&gt;)</li>
+<li>&lt;bdi&gt;  (HTML5)</li>
+</ul>
+</p>
+
+
+<p>3) The CSS property "unicode-bidi" is supported with the following (CSS3) values: normal | embed | isolate | bidi-override | isolate-override | plaintext.
+<br />
+See <a href="http://www.w3.org/TR/css3-writing-modes/#unicode-bidi">http://www.w3.org/TR/css3-writing-modes/#unicode-bidi</a>
+for more details.
+<br />
+"unicode-bidi" is supported on block level elements as well as in-line elements, but note that:
+<ul><li>the value is not inherited to child blocks</li>
+<li>using "embed" or "isolate" has no effect on block level boxes</li>
+<li>"isolate-override" is equivalent to "bidi-override" on block level boxes</li>
+</ul>
+</p>
+
+<p>NB dir="auto" is not supported generally, but it is supported for &lt;bdi&gt; (has the same effect as if omitted) to use First Strong Isolate (FSI).</p>
+
+<p>Directionality can now be set on individual table cells &lt;td style="direction:rtl;unicode-bidi:embed;"&gt; or &lt;td dir="rtl"&gt;</p>
+
+
+<h4>Equivalent methods</h4>
+<p>The following are equivalent methods:</p>
+<table>
+<tr>
+<td>
+EMBED 
+</td></tr>
+<tr><td class="code">
+&lt;span dir="rtl"&gt;...&lt;/span&gt;<br />
+&amp;#x202B;...&amp;#x202C;<br />
+&lt;span style="direction: rtl; unicode-bidi: embed"&gt;...&lt;/span&gt;
+</td></tr>
+<tr><td>
+OVERRIDE 
+</td></tr>
+<tr><td class="code">
+&lt;bdo dir="rtl"&gt;...&lt;/bdo&gt;<br />
+&amp;#x202E;...&amp;#x202C;<br />
+&lt;span dir="rtl" style="unicode-bidi: bidi-override"&gt;...&lt;/span&gt;<br />
+&lt;span style="direction: rtl; unicode-bidi: bidi-override"&gt;...&lt;/span&gt;
+</td></tr>
+<tr><td>
+ISOLATE 
+</td></tr>
+<tr><td class="code">
+&lt;bdi dir="ltr"&gt;...&lt;/bdi&gt;<br />
+&amp;#x2067;...&amp;#x2069;<br />
+&lt;span dir="rtl" style="unicode-bidi: isolate"&gt;...&lt;/span&gt;<br />
+&lt;span style="direction: rtl; unicode-bidi: isolate"&gt;...&lt;/span&gt;
+</td></tr>
+<tr><td>
+First Strong Isolate (FSI)
+</td></tr>
+<tr><td class="code">
+&lt;bdi&gt;...&lt;/bdi&gt;<br />
+&lt;bdi dir="auto"&gt;...&lt;/bdi&gt;<br />
+&amp;#x2068;...&amp;#x2069;<br />
+&lt;span dir="rtl" style="unicode-bidi: plaintext"&gt;...&lt;/span&gt;<br />
+&lt;span style="direction: rtl; unicode-bidi: plaintext"&gt;...&lt;/span&gt;<br />
+</tr>
+</table>
+
+
+<h4>First strong isolate (FSI)</h4>
+<p>FSI is useful when including text within a paragraph where the directionality of the text is unknown. For example, if you are printing out a catalogue from a database of book titles and the number of readers, when some book titles are in right-to-left script, you may use this template:</p>
+
+<p class="code">
+&lt;li&gt;Title: {TITLE} - {READERS} readers&lt;/li&gt;
+</p>
+
+<p>This would result in the following:</p>
+
+<ul>
+<li style="font-family: freesans; direction: ltr;">Title: Alice in Wonderland - 12390 readers</li>
+<li style="font-family: freesans; direction: ltr;">Title: &#x5e2;&#x5dc;&#x5d9;&#x5e1;&#x5d4; &#x5d1;&#x5d0;&#x5e8;&#x5e5; &#x5d4;&#x5e4;&#x5dc;&#x5d0;&#x5d5;&#x5ea;, &#x5e1;&#x5d9;&#x5e4;&#x5d5;&#x5e8;-&#x5d9;&#x5dc;&#x5d3;&#x5d9;&#x5dd; &#x5de;&#x5d0;&#x5ea; &#x5dc;&#x5d5;&#x5d0;&#x5d9;&#x5e1; &#x5e7;&#x5e8;&#x5d5;&#x5dc; - 17890 readers</li>
+</ul>
+
+<p class="code">
+&lt;li&gt;Title: &lt;bdi&gt;{TITLE}&lt;/bdi&gt; - {READERS} readers&lt;/li&gt;
+</p>
+
+<p>Using BDI will result in the following:</p>
+
+<ul>
+<li style="font-family: freesans; direction: ltr;">Title: <bdi>Alice in Wonderland</bdi> - 12390 readers</li>
+<li style="font-family: freesans; direction: ltr;">Title: <bdi>&#x5e2;&#x5dc;&#x5d9;&#x5e1;&#x5d4; &#x5d1;&#x5d0;&#x5e8;&#x5e5; &#x5d4;&#x5e4;&#x5dc;&#x5d0;&#x5d5;&#x5ea;, &#x5e1;&#x5d9;&#x5e4;&#x5d5;&#x5e8;-&#x5d9;&#x5dc;&#x5d3;&#x5d9;&#x5dd; &#x5de;&#x5d0;&#x5ea; &#x5dc;&#x5d5;&#x5d0;&#x5d9;&#x5e1; &#x5e7;&#x5e8;&#x5d5;&#x5dc;</bdi> - 17890 readers</li>
+</ul>
+
+
+
 
 <h3>Kerning</h3>
 <p>Kerning is a bit complicated! CSS3 allows for 2 methods of specifying kerning. In mPDF 6, these 2 methods have exactly the same effect:</p>
@@ -674,7 +849,7 @@ Use $this-&gt;autoLangToFont instead of $this-&gt;useLang
 		),
 </p>
 
-<p>Note: The Beta version of mPDF comes with a large collection of fonts, and all configured to use their full OTL capabilities. (This will probably change when the full release comes.)</p>
+<p>mPDF is published with a large collection of fonts, and all configured to use their full OTL capabilities.</p>
 
 <h4>useOTL</h4>
 <p>useOTL should be set to an integer between 0 and 255. Each bit will enable OTL features for a different group of scripts:</p>
@@ -741,11 +916,297 @@ Use $this-&gt;autoLangToFont instead of $this-&gt;useLang
 
 <p>or, you could use font translation e.g.</p>
 <p class="code">
-$mpdf = new mPDF();<br />
 $mpdf-&gt;fonttrans[\'freeserif\'] = \'freeserif2\';
 </p>
 
 
+<pagebreak />
+
+<h3>Page breaking</h3>
+
+<h4>Types of page break</h4>
+
+<p>The handling of borders and padding at page breaks has been updated. mPDF has three types of page breaks:</p>
+<p>1) "slice" - no border and no padding are inserted at a break. The effect is as though the element were rendered with no breaks present, and then sliced by the breaks afterward</p>
+
+<p>2) "cloneall" - each page fragment is independently wrapped with the borders and padding of all open elements.</p>
+
+<p>3) "clonebycss" - open elements which have the (custom) CSS property "box-decoration-break" set to "clone" are independently wrapped with their border and padding.</p>
+
+<p>The difference between 2) and 3) is illustrated by this example:</p>
+
+<p class="code">
+&lt;style&gt;<br />
+div { border: 1px solid black; padding: 1em; }<br />
+.level1 { box-decoration-break: slice; }<br />
+.level2 { box-decoration-break: clone; }<br />
+.level3 { box-decoration-break: clone; }<br />
+&lt;/style&gt;<br />
+<br />
+<br />
+&lt;div class="level1"&gt;<br />
+  &lt;div class="level2"&gt;<br />
+    &lt;div class="level3"&gt;<br />
+      &lt;p style="page-break-after:always"&gt;...&lt;/p&gt;<br />
+      &lt;p&gt;....&lt;/p&gt;<br />
+   &lt;/div&gt;<br />
+  &lt;/div&gt;<br />
+&lt;/div&gt;<br />
+</p>
+
+<p>At the forced pagebreak which occurs after the P element:</p>
+
+<p>If the page break type is "cloneall" - the three DIV elements will all be closed, by drawing the border and padding for each at the end of the page; the three DIV elements will be re-opened, drawing the borders and padding, at the top of the next page.</p>
+
+<p>If the page break type is "clonebycss" - starting from the innermost element (div.level3) the DIV elements will have a border and padding at the end of the page if "box-decoration-break" is clone. In this case level2 and level 3 will be closed/cloned and level 1 will be sliced; the opposite will occur at the top of the next page.</p>
+
+<h4>Control of page breaks</h4>
+
+<table border="1">
+<tr>
+<td>Automatic page breaks (in flow of text)</td>
+<td>Always "slice"</td>
+</tr>
+
+<tr>
+<td>&lt;tocpagebreak&gt;</td>
+<td>Always "cloneall"</td>
+</tr>
+
+<tr>
+<td>&lt;formfeed&gt;</td>
+<td>Always "slice"</td>
+</tr>
+
+<tr>
+<td>If using columns</td>
+<td>Always "cloneall"</td>
+</tr>
+
+<tr>
+<td>Page break forced by change of @page selector</td>
+<td>Always "cloneall"</td>
+</tr>
+
+<tr>
+<td>&lt;pagebreak&gt; </td>
+<td>Always "cloneall" if a change in page size or margins is specified.<br />
+Otherwise page break type is determined by value of configurable variable: $this-&gt;defaultPagebreakType. Default is "cloneall".<br />
+Default can be overridden by attribute "page-break-type" e.g. &lt;pagebreak page-break-type="clonebycss" /&gt;
+</td>
+</tr>
+
+<tr>
+<td>Page breaks forced by:<br />
+page-break-before or page-break-after 
+</td>
+<td>
+Page break type determined by value of configurable variable: $this-&gt;defaultPagebreakType. Default is "cloneall".
+</td>
+</tr>
+</table>
+
+
+
+<h4>Notes on page breaking</h4>
+<p>"box-decoration-break: slice | clone" was proposed for CSS3 in <a href="http://www.w3.org/TR/2012/CR-css3-background-20120417/#the-box-decoration-break">http://www.w3.org/TR/2012/CR-css3-background-20120417/#the-box-decoration-break</a> but it appears that it may be withdrawn. Default is "slice"; it is not inherited.</p>
+<p>"page-break-before" is not supported on &lt;table&gt;.</p>
+<p>"page-break-before|after" is ignored if set on block elements inside a table.</p>
+<p>mPDF functions e.g. AddPage() are not affected by the changes in mPDF 6.</p>
+<p>Background images and gradients are not sliced.</p>
+<p>$this-&gt;restoreBlockPagebreaks in config.php is now redundant.</p>
+
+
+
+
+<h3>Line breaking</h3>
+<p>The algorithm for determining automatic line breaks has been completely rewritten, ignoring inline tags (except for some cases of CJK line-breaking, and autohyphenation).</p>
+
+<p>Line breaks will be allowed at:</p>
+<ul>
+<li>Spaces U+0020</li>
+<li>Word break U+200B</li>
+<li>Hyphen-minus U+002D when CSS hyphens set to "manual" or "auto", except when in a URL, or when following character is a &gt; or numeral</li>
+<li>Hard hyphen U+2010 when CSS hyphens set to "manual" or "auto"</li>
+<li>Soft hyphen U+00AD "&shy;" when CSS hyphens set to "manual" or "auto"</li>
+<li>Automatic hyphenation when CSS hyphens set to "auto"</li>
+<li>Between CJK characters, except CJK numerals, before "CJK-following" or after "CJK-leading" characters</li>
+</ul>
+
+<p>See also "Dictionary Line breaking" above.</p>
+
+
+<pagebreak />
+
+
+<h3>Line-height and Text Baseline</h3>
+
+<h4>Using font metrics</h4>
+
+<p>mPDF 6 can (optionally) use font metrics derived from each font file to:</p>
+<ul>
+<li>Determine the height of a line when line-height is set to \'normal\'</li>
+<li>Determine the glyph baseline (previously a fixed value)</li>
+</ul>
+
+<p>Options are set by configurable variables in the <span class="code">config.php</span> file:</p>
+
+<p>Default settings in mPDF versions 6 - recommended especially for complex scripts with marks used above or below characters:</p>
+<ul class="code">
+<li>$this-&gt;useFixedNormalLineHeight = false;</li>
+<li>$this-&gt;useFixedTextBaseline = false;</li>
+<li>$this-&gt;adjustFontDescLineheight = 1.14;</li>
+</ul>
+							
+
+<p>Settings to be backwards compatible with mPDF versions &lt; 6:</p>
+<ul class="code">
+<li>$this-&gt;useFixedNormalLineHeight = true;</li>
+<li>$this-&gt;useFixedTextBaseline = true;</li>
+<li>$this-&gt;normalLineheight = 1.33;</li>
+</ul>
+
+<h4>Examples</h4>
+
+<p>Using the font metrics will give approximately the same result as the fixed value for many standard Latin script fonts e.g. DejaVu Sans Condensed:</p>
+
+<p class="gradient" style="line-height: normal; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; based on font metrics</p>
+
+<p class="gradient" style="line-height: 1.33; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; using fixed value</p>
+
+<p>However, for some fonts the normal line-height using font metrics will be significantly taller, to account for the design of the font glyphs e.g. Khmer font:</p>
+
+<p class="gradient" style="font-family:\'Khmer OS\'; line-height: normal; font-size: 10pt; padding: 0 0.3em; margin-bottom: 1em;"><span style="font-family:\'DejaVu Sans Condensed\';">line-height: normal;  based on font metrics;</span>
+&#x1784;&#x17D2;&#x179A;&#x17D2;&#x1782; &#x1784;&#x17D2;&#x1782;&#x17D2;&#x179A; &#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8; &#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8; &#x1784;&#x17d2;&#x1782;&#x17d2;&#x179a;&#x17c4;&#x17c7; &#x1799;&#x17bb;&#x179c;&#x1787;&#x1793; </p>
+
+<p class="gradient" style="font-family:\'Khmer OS\'; line-height: 1.33; font-size: 10pt; padding: 0 0.3em; margin-bottom: 1em;"><span style="font-family:\'DejaVu Sans Condensed\';">line-height: normal;  using fixed value;</span>
+&#x1784;&#x17D2;&#x179A;&#x17D2;&#x1782; &#x1784;&#x17D2;&#x1782;&#x17D2;&#x179A; &#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8; &#x1793;&#x17d2;&#x179a;&#x17d2;&#x178f;&#x17b8; &#x1784;&#x17d2;&#x1782;&#x17d2;&#x179a;&#x17c4;&#x17c7; &#x1799;&#x17bb;&#x179c;&#x1787;&#x1793; </p>
+
+
+<p>For more information on how complex normal lineheights are, see Eric Meyers\' website: <a href="http://meyerweb.com/eric/thoughts/2008/05/06/line-height-abnormal/">http://meyerweb.com/eric/thoughts/2008/05/06/line-height-abnormal/</a> and 
+<a href="http://typophile.com/node/13081">http://typophile.com/node/13081</a></p>
+
+
+<h4>CSS control of line-height</h4>
+
+<p>There are also new controls for line-height using draft CSS3 properties. These can be set on all block level elements (P, DIV etc) and tables (TABLE/TD/TH).</p>
+<p class="code"><b>line-stacking-strategy</b> = inline-line-height | block-line-height | max-height | grid-height</p>
+<ul>
+<li><span class="code">inline-line-height</span> - [default] lineheight is initially calculated from the block-level font[-size]; the height is expanded by any inline content, including the calculated lineheight of that inline content;</li>
+<li><span class="code">block-line-height</span> - lineheight is fixed as the lineheight of the block-level font[-size];</li>
+<li><span class="code">max-height</span> - lineheight is initially calculated from the block-level font; the height is expanded by any inline content, EXCLUDING the calculated lineheight of that inline content;</li>
+<li><span class="code">grid-height</span> - lineheight is initially calculated from the block-level font; the height is expanded - AS MULTIPLES OF INITIAL LINEHEIGHT - by any inline content, EXCLUDING the calculated lineheight of that inline content;</li>
+</ul>
+<p>Note: XSL has a similar property with the same name, which uses different but equivalent values: <span class="code">line-height</span> instead of <span class="code">inline-line-height</span>, <span class="code">font-height</span> instead of <span class="code">block-line-height</span>. It also uses <span class="code">max-height</span>. The value <span class="code">grid-height</span> is new to the CSS3 property.</p>
+
+<h4>Examples</h4>
+
+<p class="gradient" style="line-height: normal; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; DejaVu Sans Condensed</p>
+
+<p class="gradient" style="line-height: normal; line-stacking-strategy: inline-line-height; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; <span style="font-size: 16pt;">16pt font-size &#194;</span> with line-stacking-strategy: inline-line-height</p>
+
+<p class="gradient" style="line-height: normal; line-stacking-strategy: block-line-height; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; <span style="font-size: 16pt;">16pt font-size &#194;</span> with line-stacking-strategy: block-line-height</p>
+
+<p class="gradient" style="line-height: normal; line-stacking-strategy: max-height; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; <span style="font-size: 16pt;">16pt font-size &#194;</span> with line-stacking-strategy: max-height</p>
+
+<p class="gradient" style="line-height: normal; line-stacking-strategy: grid-height; font-size: 10pt; padding: 0 0.3em;font-family:\'DejaVu Sans Condensed\'; margin-bottom: 1em;">line-height: normal; <span style="font-size: 16pt;">16pt font-size &#194;</span> with line-stacking-strategy: grid-height</p>
+
+<br />
+<br />
+
+<p class="code"><b>line-stacking-shift</b> = consider-shifts | disregard-shifts</p>
+<p>This property determines whether to include or disregard the adjusted top-  and bottom-edge of any characters that have a baseline-shift (e.g. superscript) when calculating lineheight.</p>
+<p>Note: XSL has a similar property with a different name: <span class="code">line-height-shift-adjustment</span> which uses the same values.</p>
+
+<h4>Examples</h4>
+
+<p>In the table below, the line-height is set to 1em throughout the table; line-stacking-shift is set as \'disregard-shifts\' in the first row, and has default setting (consider-shifts) in the second row.</p> 
+<table style="line-height: 1em;" border="1">
+<tr>
+<td style="\'DejaVu Sans Condensed\'; line-stacking-shift: disregard-shifts; ">
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+</td>
+<td style="\'DejaVu Sans Condensed\'; ">
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+</td>
+</tr>
+<tr>
+<td style="\'DejaVu Sans Condensed\'; ">
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+Normal text DejaVu Sans<sup>[53]</sup> Condensed <br />
+</td>
+<td style="\'DejaVu Sans Condensed\'; ">
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+Normal text DejaVu Sans Condensed <br />
+</td>
+</tr>
+</table>
+
+
+
+<p>For more details see the <a href="http://www.w3.org/TR/css3-linebox/#InlineBoxHeight">CSS3 draft specification</a>.</p>
+
+<h4>Note for Advanced users</h4>
+
+<p>There are actually three possible metrics that can be used in a TrueType font file. The differences are summed up quite well in this article at <a href="http://typophile.com/node/13081">http://typophile.com/node/13081</a>. mPDF will by default use the usWinAscent and usWinDescent values to determine a \'normal\' line-height, with two variations:</p>
+
+<ul>
+<li>if either the usWinAscent or usWinDescent are greater than the font bounding box (yMin yMax), then the values are reduced to equal the yMin/yMax values.
+NB this works as a fix with Myanmar Text (Windows 8 version) to give a line-height normal that is equivalent to that produced in browsers.</li>
+<li>if the USE_TYPO_METRICS bit is set on fsSelection (OS/2 table), this is telling the font to use the sTypo values and not the usWinAscent values.
+NB this works as a fix with Cambria Math font to give a normal line-height; at present, this is the only font I have found with this bit set;
+although note that MS WordPad and Windows FireFox browser use the big line-height from usWinAscent, whilst MS Word 2007 observes the fSelection value.</li>
+</ul>
+
+<p>You can change the font metrics used by mPDF, by editing the defined constant (_FONT_DESCRIPTOR) at the top of the <span classs="code">mpdf.php</span> file:</p>
+<ul>
+<li>\'winTypo\' uses sTypoAscender etc from the OS/2 table and is the one officially recommended - BUT</li>
+<li>\'win\' use usWinAscent etc from OS/2 and in practice seems to be used most commonly in Windows environment; this is the default in mPDF;</li>
+<li>\'mac\' uses Ascender etc from hhea table, and may be used to give results consistent with a Mac/OSX environment.</li>
+</ul>
+
+<p>Finally, you can override values for Ascent, Descent and Leading for any specific font, by setting values in <span classs="code">config_font.php</span> e.g.
+<div class="gradient">
+<pre style="font-size: 9pt;">	"cambriamath" => array(
+		\'R\' => "cambria.ttc",
+		\'useOTL\' => 0xFF,
+		\'TTCfontID\' => array(
+			\'R\' => 2,	
+			),
+		\'Ascent\' => 950,
+		\'Descent\' => -222,
+		\'Leading\' => 0,
+		),
+</pre>
+</div>
+<p>Note - The same values are used for all styles of the font-family. Descent values should be negative. All values should be given using a 1000 units per em scale, regardless of the UnitsPerEm used in the font design.</p>
+
+<h4>Notes</h4>
+<p>Remember that line-height for a TABLE has a default value (1.2) set in the <span classs="code">config.php</span> default CSS. This is left in for backwards compatability. You can change this value to \'normal\' for results consistent with most browsers.</p>
+<p>Line-height in a &lt;textarea&gt; is fixed and defined in <span class="code">classes/mpdfform.php</span> (= 1.2)</p>
+<p>Details of the font metrics can be seen by inspecting the temporary font files e.g. <span class="code">/ttfontdata/[fontname].mtx.php</span>.
+
+
+
+<pagebreak />
 
 <h3>Indexes</h3>
 <h4>Index style and layout</h4>
@@ -774,7 +1235,6 @@ $mpdf-&gt;fonttrans[\'freeserif\'] = \'freeserif2\';
 div.mpdf_index_main {<br />
 &nbsp; &nbsp; line-height: normal;<br />
 &nbsp; &nbsp; font-family: sans-serif;<br />
-&nbsp; &nbsp; font-size: 11pt;<br />
 }<br />
 div.mpdf_index_letter {<br />
 &nbsp; &nbsp; line-height: normal;<br />
@@ -789,7 +1249,6 @@ div.mpdf_index_letter {<br />
 div.mpdf_index_entry {<br />
 &nbsp; &nbsp; line-height: normal;<br />
 &nbsp; &nbsp; font-family: sans-serif;<br />
-&nbsp; &nbsp; font-size: 11pt;<br />
 &nbsp; &nbsp; text-indent: -1.5em;<br />
 }<br />
 a.mpdf_index_link { <br />
@@ -798,7 +1257,7 @@ a.mpdf_index_link { <br />
 }<br />
 </p>
 
-
+<p>A default stylesheet for Indexes is included in mpdf.css (see note later for more information).</p>
 
 <pagebreak />
 
@@ -854,10 +1313,266 @@ e.g. &Atilde; [A tilde] (U+00C3) (decimal 195) => a (U+0061) (decimal 97). The t
 &lt;columns column-count="1" /&gt;<br />
 </p>
 
+<h4>Index Sub-entries</h4>
+<p>Index entries can contain sub-entries, separated by colons e.g.</p>
+<p class="code">&lt;indexentry content="Mammals:elephants" /&gt;</p>
+
+<p>A shorthand way of displaying subentries is set by default, which suppresses the main entry if &gt; 1 subEntry. It can be disabled/enabled using the configurable variable $this-&gt;indexUseSubentries in config.php.</p>
+
+<p>This is the default appearance, with $this-&gt;indexUseSubentries = false; -</p>
+<div style="border: 1px solid #666666; padding: 0.3em;">
+Mammals  73<br />
+- elephants  142<br />
+- humans  173<br />
+Marsupials<br />
+- kangaroos  75<br />
+- wombats  86
+</div>
+
+<p>Index entries can also include simple mark-up tags and/or more than one colon e.g:</p>
+<p class="code">&lt;indexentry content="Mammals:&amp;lt;b&amp;gt;elephants&amp;lt;/b&amp;gt;: breeding" /&gt;</p>
+which appears as:
+<div style="border: 1px solid #666666; padding: 0.3em;">
+Mammals<br />
+- <b>elephants</b>: breeding 15
+</div>
+
+<p>This is the appearance with $this-&gt;indexUseSubentries = false; -</p>
+<div style="border: 1px solid #666666; padding: 0.3em;">
+Mammals  73<br />
+Mammals, elephants  142<br />
+Mammals, <b>elephants</b>: breeding 15<br />
+Mammals, humans  173<br />
+Marsupials, kangaroos  75<br />
+Marsupials, wombats  86<br />
+</div>
+
+<h4>Customised appearance</h4>
+<p>Several variables set at beginning of function InsertIndex() in mpdf.php which could be changed to alter appearance of Index.
+	e.g. spacer, and joiner characters.</p>
 
 
 <pagebreak />
 
+<h3>Lists</h3>
+
+<p>Lists are now handled as for other block level tags, so you can apply any CSS properties usable on blocks (e.g. border, background, padding) to UL/OL and LI tags.</p>
+
+<p>CSS property "list-style" is now handled properly as a shorthand, and there is full support for "list-style-image", "list-style-type", and "list-style-position".</p>
+
+
+<p>There are two modes for lists in mPDF 6: "mpdf" mode and "browser" mode. Mode is set using the configurable variable $this-&gt;list_auto_mode in config.php</p>
+
+<p>1) Browser mode gives the same display as most browsers. In this mode, the default list indentation is set by padding "0 auto" in the default CSS in config.php.  "auto" equates to the value of $this-&gt;list_indent_default in config.php - this is a "magic" value for padding, which is applied to either left or right depending on directionality of the list (rtl/ltr).</p>
+
+
+<p>2) mPDF mode gives results compatible with previous versions of mPDF. In this mode, the indentation is calculated differently: the outside edge of the list item is considered to be the outside edge of the bullet or number. For numbered lists, mPDF calculates the width of the largest number and this width is used to set the outside edge. The default list indentation of "auto" in mPDF mode is set by $this-&gt;list_indent_default_mpdf. This value is added to the automatic calculated indentation. For backwards compatibility, $this-&gt;list_indent_first_level = 0; can be used to prevent any indentation of the first list level.</p>
+
+<p>The automatic indentation only works for bullets or numbered lists, and is ignored if "list-style-position: inside" is set, or images are used for markers.</p>
+
+<p>Browser mode is set as the default - for backwards compatibility, change this to "mpdf".</p>
+
+<h4>List top & bottom margins</h4>
+<p>The default in browsers is to add a top and bottom margin to the outermost list only. This can be defined using CSS as:</p>
+<p class="code">
+ul, ol { margin-top: 0.83em; margin-bottom: 0.83em; }<br />
+ul ul, ul ol, ol ul, ol ol { margin-top: 0; margin-bottom: 0; }
+</p>
+<p>This style is included in file mpdf.css (see later).</p>
+<p>Previous versions of mPDF always added a top and bottom margin to the outermost list, (but no variation from this was possible). mPDF 6 is therefore backwards compatible re. the margins.</p>
+<p>[NB The CSS styles are included in mpdf.css, because the defaultCSS values set in config.php only works on basic elements, and cannot use selectors such as "ol ol".]</p>
+
+<h4>Other new configurable variables</h4>
+
+
+<p>Configurable variables are used to define size and offset for list bullets (i.e. disc, circle or square).
+The values can be any valid CSS size.</p>
+<p>To specify a fixed bullet size and offset to give a similar appearance to most browsers, the default is set as:</p>
+<ul>
+<li>$this-&gt;list_marker_offset = \'5.5pt\';</li>
+<li>$this-&gt;list_symbol_size = \'3.6pt\';</li>
+</ul>
+<p>To specify size and offset proportional to the list item\'s font size (compatible with previous versions of mPDF), use:</p>
+<ul>
+<li>$this-&gt;list_marker_offset = \'0.45em\';</li>
+<li>$this-&gt;list_symbol_size = \'0.31em\';</li>
+</ul>
+
+
+<h4>Notes on Lists</h4>
+<p>The attribute type="" is case sensitive (whereas it is case insensitive in CSS). This allows the use of shorthand versions e.g. type="A" for uppercase alpha-numeric.</p>
+<p>"list-style-type" is only inherited to child LI (not to child UL/OL); list-style-image and -position are fully inherited.</p>
+<p>Lists in tables remain basic, as block-level elements are not supported inside tables.</p>
+<p>Properties like text-align:justify will now be inherited from surrounding elements, which will change the appearance of lists designed with earlier versions of mPDF.</p>
+<p>The attribute start="3" (integer) works for "OL"; it is an official (though depracated) HTML attribute.</p>
+<p>List bullets (type = disc, circle or square) are now drawn rather than using font glyphs, for better consistency.</p>
+
+
+
+<h4>List examples</h4>
+
+<div style="border: 1px solid blue;">This demonstrates the appearance when list_auto_mode is set to \'mpdf\', compatible with previous mPDF versions. Indentation is set to zero (list_indent_default_mpdf). Note the top and bottom margin on the first list level only.
+<ol style="list-style-type:upper-roman; border: 1px solid red;">
+<li style="border: 1px solid #CCCCCC;">First item</li>
+<li style="border: 1px solid #CCCCCC;">Second item
+<ol style="list-style-type:upper-roman; border: 1px solid green;">
+<li style="border: 1px solid #CCCCCC;">Next list level</li>
+<li style="border: 1px solid #CCCCCC;">Second item</li>
+</ol>
+</li>
+</ol>
+</div>
+
+<div style="border: 1px solid blue;">This demonstrates the same default settings, but list numbering is set to start at 32. Note how the indentation is adjusted to fit the maximum width of the numbering.
+<ol start="32" style="list-style-type:upper-roman; border: 1px solid red;">
+<li style="border: 1px solid #CCCCCC;">First item</li>
+<li style="border: 1px solid #CCCCCC;">Second item
+<ol start="32" style="list-style-type:upper-roman; border: 1px solid green;">
+<li style="border: 1px solid #CCCCCC;">Next list level</li>
+<li style="border: 1px solid #CCCCCC;">Second item</li>
+</ol>
+</li>
+</ol>
+</div>
+
+<div style="border: 1px solid blue;">This demonstrates the appearance when list_auto_mode is set to \'browser\', compatible with browsers. Indentation is set to 40px (list_indent_default)
+<ol style="list-style-type:upper-roman; border: 1px solid red; padding-left: 40px;">
+<li style="border: 1px solid #CCCCCC;">First item</li>
+<li style="border: 1px solid #CCCCCC;">Second item
+<ol style="list-style-type:upper-roman; border: 1px solid green; padding-left: 40px;">
+<li style="border: 1px solid #CCCCCC;">Next list level</li>
+<li style="border: 1px solid #CCCCCC;">Second item</li>
+</ol>
+</li>
+</ol>
+</div>
+
+<div style="border: 1px solid blue;">This demonstrates the same as the previous example, but list numbering is set to start at 32. Note that the default indentation remains fixed at 40px (list_indent_default)
+<ol start="32" style="list-style-type:upper-roman; border: 1px solid red; padding-left: 40px;">
+<li style="border: 1px solid #CCCCCC;">First item</li>
+<li style="border: 1px solid #CCCCCC;">Second item
+<ol start="32" style="list-style-type:upper-roman; border: 1px solid green; padding-left: 40px;">
+<li style="border: 1px solid #CCCCCC;">Next list level</li>
+<li style="border: 1px solid #CCCCCC;">Second item</li>
+</ol>
+</li>
+</ol>
+</div>
+
+<div style="border: 1px solid blue;">This demonstrates control of the list-style-type, list-style-position and list-style-image.
+<ol style="list-style-type:decimal; border: 1px solid red; padding-left: 40px;">
+<li style="border: 1px solid #CCCCCC;">First item in list</li>
+<li style="border: 1px solid #CCCCCC;">Second item</li>
+<li style="border: 1px solid #CCCCCC; list-style-type: disc;">List style set as \'disc\'</li>
+<li style="border: 1px solid #CCCCCC; list-style-type: none;">List style set as \'none\'</li>
+<li style="border: 1px solid #CCCCCC; list-style-image:url(goto2.gif)">Using an image.</li>
+<li style="border: 1px solid #CCCCCC; list-style-position: inside">List-style-position: inside.</li>
+<li style="border: 1px solid #CCCCCC; list-style-type: U+263Argb(255,0,0);">User defined list bullet</li>
+</ol>
+</div>
+
+
+<h3>Image transform</h3>
+
+<p>The CSS property "transform" is supported on images (only). All transform functions are supported except matrix() i.e. translate(), translateX(), translateY(), skew(), skewX(), skewY(), scale(), scaleX(), scaleY(), and rotate()</p>
+
+<p>Transforms cannot be used when using columns or Keep-with-table (use_kwt).</p>
+<p>The CSS property background-color is now supported on images.</p>
+
+<p>In the following examples, note the difference between transform (which is applied after layout) and image-orientation (which is applied before layout):</p>
+<div style="border:1px solid red">
+Hallo world
+<img src="bayeux2.jpg" width="30mm" style="border:2px solid blue; padding:0.5em; background-color: yellow" />
+Hallo world
+</div>
+<div style="border:1px solid red">
+Hallo world
+<img src="bayeux2.jpg" width="30mm" style="transform: rotate(30deg);border:2px solid blue; padding:0.5em; background-color: yellow" />
+Hallo world
+</div>
+<div style="border:1px solid red">
+Hallo world
+<img src="bayeux2.jpg" width="30mm" style="transform:scale(0.5,1) skew(45deg,-45deg) translate(80mm,80mm);border:2px solid blue; padding:0.5em; background-color: yellow" />
+Hallo world
+</div>
+<div style="border:1px solid red">
+Hallo world
+<img src="bayeux2.jpg" height="30mm" style="image-orientation:90deg;border:2px solid green; padding:0.5em; background-color: yellow" />
+Hallo world (image-orientation)
+</div>
+
+
+<h3>CSS overline</h3>
+<p>The CSS property "text-decoration: overline" is supported. Note that since mPDF 5.7.3 text-decoration use the parent inline block baseline/fontsize/color for child inline elements, and allows nested use of these values and superscript/subscript.</p>
+<div style="font-size: 18pt;"><u>1<sup>st</sup> place</u>
+  and compare with 
+<u>1<sup><u>st</u></sup></u></div>
+
+<div style="font-size:18pt">He <span style="text-decoration: line-through;color:green;"><span style="text-decoration:overline;">won</span> <span style="font-size:36pt;color:blue;">1<span style="text-decoration:underline; vertical-align:super;font-size:18pt;color:red;">st</span></span> place</span></div>
+
+
+<pagebreak />
+
+<h3>Headers and Footers</h3>
+<p>Headers and Footers are all now written internally as HTMLheaders/footers. The use of non-HTML headers and footers is depracated, but remains supported. Non-HTML headers and footers are converted in mPDF to HTML equivalents.</p>
+
+<p>Layout: This may mean that there will be a change in the resulting PDF. The main change is that an HTML table is created with three cells for left, right and middle; if you had a very long Left header item, it will not overwrite the center item, but it may wrap center onto 2 lines.</p>
+
+<p>Naming: Default non-HTML headers will not clash with HTML headers, but named non-HTML headers WILL clash with (and overwrite) HTML headers of the same (equivalent) name e.g. html_MyFooter == MyFooter (non-HTML).</p>
+
+<p>Aliases: {nb} or {nbpg} now only work in Headers or Footers, and not in the main text. {PAGENO} and {DATE ...} continue to only work in Headers or Footers.</p>
+
+<p>ToC: Can now set the pagenumbering/style/reset/suppress for the ToC separately (see section on ToC).</p>
+
+<p>The following are all depracated (but still supported) in favour of HTMLheader/footers:</p>
+<ul>
+<li>SetHeader()</li>
+<li>SetFooter()</li>
+<li>&lt;pageheader&gt;</li>
+<li>&lt;pagefooter&gt;</li>
+<li>DefHeaderByName()</li>
+<li>DefFooterByName()</li>
+<li>&lt;setpageheader&gt;</li>
+<li>&lt;setpagefooter&gt;</li>
+<li>SetHeaderByName()</li>
+<li>SetFooterByName()</li>
+</ul>
+
+<p>If document direction is RTL (body dir=rtl, html dir=rtl), then you need to set directionality before setting non-HTML headers e.g.</p>
+<p class="code">
+	$mpdf = new mPDF();<br />
+	$mpdf->SetDirectionality(\'rtl\');	// i.e. add this in<br />
+	$mpdf->SetHeader($h);<br />
+	$mpdf->SetFooter($f);<br />
+	$mpdf->WriteHTML(\'&lt;body dir="rtl">...\');<br />
+</p>
+
+
+<pagebreak />
+
+<h3>Table of Contents (ToC)</h3>
+<p>Page numbering can now be applied and controlled for the pages containing a ToC.</p>
+
+<p>There are three new parameters to control pagenumbering in the ToC: toc-resetpagenum, toc-pagenumstyle, and toc-suppress.
+These are set as attributes in &lt;tocpagebreak&gt; or as the last 3 parameters in TOCpagebreak();
+they set the pagenumbering and pagenumbering style for the ToC, and whether to suppress pagenumbers in ToC.</p>
+
+<p>The default setting for all is to continue pagenumbering and pagenumstyle (and suppression) from pages preceding the ToC.</p>
+
+<p>Note: Page numbering will <b>always</b> reset following a ToC. By default it will set it to 1, unless a value for resetpagenum is specified in TOCpagebreak or &lt;tocpagebreak&gt;.</p>
+
+<p>Backwards compatibility: page numbers are no longer suppressed by default in ToC.</p>
+
+<p>Although "suppress" and "toc-suppress" are supported, the recommended way to control whether page numbering appears is by using different headers and footers for each section.</p>
+
+<p>Note: If you have 2 ToCs immediately following each other, and wish to use pagenumstyle or suppress to control the following text, then you need to set those values on both of the &lt;tocpagebreak&gt; elements.</p>
+
+<p>The default CSS styles for ToCs and Indexes are now set in mpdf.css (see later).</p>
+
+<p>See notes later on page numbering.</p>
+
+
+<pagebreak odd-footer-name="myHTMLhebrew" odd-footer-value="1" even-footer-name="myHTMLhebrew" even-footer-value="1" pagenumstyle="hebrew" />
 
 <h3>Other changes from mPDF 5</h3>
 
@@ -875,6 +1590,11 @@ e.g. &Atilde; [A tilde] (U+00C3) (decimal 195) => a (U+0061) (decimal 97). The t
 <p><b>SetAutoFont()</b> - is now redundant. You may need to set: $mpdf-&gt;autoScriptToLang = true; for the same results.</p>
 
 <p><b>Indexes</b> - have been largely redefined. See the section above.</p>
+
+<p><b>Lists</b> - have been rewritten. See the section above.</p>
+
+<p><b>Headers and Footers</b> - have been rewritten. See the section above.</p>
+
 
 <div>A number of old depracated aliases will no longer be supported. Warning errors have been added to prompt you to change to the updated form:</div>
 <ul>
@@ -898,6 +1618,9 @@ e.g. &Atilde; [A tilde] (U+00C3) (decimal 195) => a (U+0061) (decimal 97). The t
 <li>CreateReference and CreateIndex - cf. Index section above</li>
 </ul>
 
+<h4>Default style sheet</h4>
+<p>A new mpdf.css file includes defaults for LISTS top/bottom margins, and also examples for Indexes and ToCs. This now acts like a normal CSS file, including cascading selectors i.e. not just main tags. This is always read (if present), so acts as a secondary default CSS, but one which allows selectors. Styles added to this act like a user stylesheet when considering precedence e.g. cellSpacing and border-spacing.</p>
+
 
 <h4>Direct writing methods and OTL</h4>
 <p>WriteText() WriteCell() Watermark() AutoSizeText() and ShadedBox() DO support complex scripts and right-to-left text (RTL).</p>
@@ -915,13 +1638,13 @@ MultiCell() does not support kerning and justification. NB This includes &lt;tex
 <p>Short codes are recognised for the 5 most common:</p>
 <ul>
 <li>"1" - decimal</li>
-<li>"A" - alpha - uppercase</li>
-<li>"a" - alpha - lowercase</li>
-<li>"I" - roman - uppercase</li>
-<li>"i" - roman - lowercase</li>
+<li>"A" = upper-latin or upper-alpha</li>
+<li>"a" = lower-latin or lower-alpha</li>
+<li>"I" = upper-roman</li>
+<li>"i" = lower-roman</li>
 </ul>
 <p>or any of the following: 
-arabic-indic, bengali, devanagari, gujarati, gurmukhi, kannada, malayalam, oriya, persian, tamil, telugu, thai, urdu, cambodian, khmer, lao, cjk-decimal
+arabic-indic, hebrew, bengali, devanagari, gujarati, gurmukhi, kannada, malayalam, oriya, persian, tamil, telugu, thai, urdu, cambodian, khmer, lao, cjk-decimal
 </p>
 
 <p>Note: A suitable font must be used in the header/footer in order to display the numbers in the selected script.</p>
@@ -933,11 +1656,62 @@ $mpdf-&gt;defaultPageNumStyle = "arabic-indic";  // at runtime<br />
 </p>
 
 <h4>Other Minor changes in mPDF 6</h4>
-<p>mpdf.css is now redundant / removed. If you have added values to this secondary default CSS file, either edit $defaultCSS in config.php with these values, or add to your document stylesheets.</p>
-
-<p>\'khmer\', \'cambodian\', \'lao\', and \'cjk-decimal\' are recognised as values for "list-style-type" in numbered lists.</p>
+<p>\'hebrew\', \'khmer\', \'cambodian\', \'lao\', and \'cjk-decimal\' are recognised as values for "list-style-type" in numbered lists.</p>
 
 <p>CSS "text-outline" is now supported on TD/TH tags</p>
+
+<p>Text wrapping in tables has been improved when using CJK scripts (chinese-japanese-korean).</p>
+
+<p>Text underline and strikethrough can be used together: <u><s>Hallo world</s></u>. Either &lt;u&gt;&lt;s&gt;...&lt;/s&gt;&lt;/u&gt; or &lt;span style="text-decoration:underline line-through;"&gt;...&lt;/span&gt; can be used</p>
+
+<p>Added support for style="opacity:0.6;" in SVG - equivalent to: style="fill-opacity:0.6; stroke-opacity: 0.6;"</p>
+Added support for opacity="0.6" (as attribute) in SVG - previously only supported fill-opacity="0.6" stroke-opacity="0.6"
+
+<p>CSS position:absolute or fixed - rotate extended now to include rotate: 180; (previously just 90 or -90)</p>
+
+<p>The default value of $this->keep_table_proportions = true; in config.php has been changed (see effect on Example 6 - nested table in top right cell).</p>
+
+<p>Limited support has been added for SVG fonts embedded in SVG images (but not using @font-face rules) - see the separate Images demo file.</p>
+
+<p>When using columns, the top margin is now collapsed at top of every column (not just first column of page).</p>
+
+<p>The way mPDF handles optional end tags has been updated to be consistent with the <a href="http://www.w3.org/TR/html5/syntax.html#optional-tags">HTML5 specification</a>	- previously not well defined for HTML4.</p>
+
+<p>Changes to the way lists are handled means that text-align:justify may be inherited by lists from surrounding block elements (which did not happen previously). See LISTS above for more information.</p>
+
+
+
+<h3>Backwards Compatibility</h3>
+<p>For maximum backwards comaptibility with older versions of mPDF, change the following configurable variables in the <span class="code">config.php</span> file:</p>
+<table class="fontinfo">
+<thead> 
+<tr>
+<td><br /></td>
+<td>mPDF 6.0 Default (Browser compatible)<br /></td>
+<td>Backwards Compatible</td>
+</tr>
+</thead> 
+<tbody>
+<tr>
+<td>Normal Line-height</td>
+<td>
+<p>$this-&gt;useFixedNormalLineHeight = false;<br />$this-&gt;useFixedTextBaseline = false;<br />$this-&gt;adjustFontDescLineheight = 1.14;</p>
+</td>
+<td>$this-&gt;useFixedNormalLineHeight = true;<br />$this-&gt;useFixedTextBaseline = true;<br />$this-&gt;normalLineheight = 1.33;</td>
+</tr>
+<tr>
+<td>Lists</td>
+<td>
+<p>$this-&gt;list_auto_mode = \'browser\';</p>
+$this-&gt;list_marker_offset = \'5.5pt\';<br />$this-&gt;list_symbol_size = \'3.6pt\';</td>
+<td>
+<p>$this-&gt;list_auto_mode = \'mpdf\';</p>
+<p>$this-&gt;list_marker_offset = \'0.45em\';<br />$this-&gt;list_symbol_size = \'0.31em\';</p>
+</td>
+</tr>
+</tbody>
+</table>
+
 
 
 <h3>More Information</h3>
@@ -1258,6 +2032,7 @@ No licence information available</td>
 ';
 //==============================================================
 $mpdf->h2bookmarks = array('H3'=>0, 'H4'=>1);
+$mpdf->defaultPageNumStyle = 'arabic-indic';
 
 $mpdf->autoLangToFont = true;
 $mpdf->WriteHTML($html);

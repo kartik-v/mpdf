@@ -1,7 +1,7 @@
 <?php
 
 /*
-mPDF regognises IETF language tags as:
+mPDF recognises IETF language tags as:
 - a single primary language subtag composed of a two letter language code from ISO 639-1 (2002), or a three letter code from ISO 639-2 (1998), ISO 639-3 (2007) or ISO 639-5 (2008) (usually written in lower case);
 - an optional script subtag, composed of a four letter script code from ISO 15924 (usually written in title case);
 - an optional region subtag composed of a two letter country code from ISO 3166-1 alpha-2 (usually written in upper case), or a three digit code from UN M.49 for geographical regions;
@@ -20,11 +20,11 @@ function GetLangOpts($llcc, $adobeCJK, &$fontdata) {
 	$lang = strtolower($tags[0]);
 	$country = '';
 	$script = '';
-	if ($tags[1]) { 
+	if (isset($tags[1]) && $tags[1]) { 
 		if (strlen($tags[1]) == 4) { $script = strtolower($tags[1]); }
 		else { $country = strtolower($tags[1]); }
 	}
-	if ($tags[2]) { $country = strtolower($tags[2]); }
+	if (isset($tags[2]) && $tags[2]) { $country = strtolower($tags[2]); }
 
 	$unifont = "";
 	$coreSuitable = false;
@@ -341,6 +341,8 @@ function GetLangOpts($llcc, $adobeCJK, &$fontdata) {
 			else { $unifont = "sun-exta"; }
 		}
 		else if ($country == "CN") { 
+			if ($adobeCJK) { $unifont = "gb"; }
+			else { $unifont = "sun-exta"; }
 		}
 	  	else { 
 			if ($adobeCJK) { $unifont = "gb"; }

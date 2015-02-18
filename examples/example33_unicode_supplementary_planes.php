@@ -27,7 +27,7 @@ dl {
 <p>Plane 1, the Supplementary Multilingual Plane (SMP), is mostly used for historic scripts such as Linear B, but is also used for musical and mathematical symbols.</p>
 <p>Plane 2, the Supplementary Ideographic Plane (SIP), is used for about 40,000 Unified Han (CJK) Ideographs.</p>
 
-<p>mPDF version 5 supports fonts containing characters from all Unicode Planes. By choosing the correct font, almost every single character from Unicode 5 can be displayed in a PDF file.</p>
+<p>mPDF supports fonts containing characters from all Unicode Planes. By choosing the correct font, almost every single character from Unicode 5 can be displayed in a PDF file.</p>
 
 <h4>Unicode Supplementary Multilingual Plane (SMP or Plane 1) U+10000 - U+1FFFF</h4>
 <h5>Gothic text</h5>

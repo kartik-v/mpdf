@@ -7,6 +7,8 @@ define("_DICT_NODE_TYPE_LINEAR", 0x02);
 define("_DICT_INTERMEDIATE_MATCH", 0x03);
 define("_DICT_FINAL_MATCH", 0x04);
 
+
+
 class otl {
 
 var $mpdf;
@@ -39,6 +41,8 @@ var $restrictToSyllable;
 var $lbdicts;	// Line-breaking dictionaries
 var $LuDataCache;
 
+var $debugOTL = false;
+
 function otl(&$mpdf) {
 	$this->mpdf = $mpdf;
 
@@ -65,7 +69,7 @@ function applyOTL($str, $useOTL) {
 	$this->fontkey = $this->mpdf->CurrentFont['fontkey'];
 	$this->glyphIDtoUni = $this->mpdf->CurrentFont['glyphIDtoUni'];
 	if (!isset($this->GDEFdata[$this->fontkey])) {
-		include_once(_MPDF_TTFONTDATAPATH.$this->fontkey.'.GDEFdata.php'); 
+		include(_MPDF_TTFONTDATAPATH.$this->fontkey.'.GDEFdata.php'); 
 		$this->GSUB_offset = $this->GDEFdata[$this->fontkey]['GSUB_offset'] = $GSUB_offset;
 		$this->GPOS_offset = $this->GDEFdata[$this->fontkey]['GPOS_offset'] = $GPOS_offset;
 		$this->GSUB_length = $this->GDEFdata[$this->fontkey]['GSUB_length'] = $GSUB_length;
@@ -139,7 +143,6 @@ function applyOTL($str, $useOTL) {
 		$charctr++;
 	}
 
-
 	/* PROCESS EACH SUBCHUNK WITH DIFFERENT SCRIPTS */
 for($sch=0;$sch<=$subchunk;$sch++) {
 	$this->OTLdata = $OTLdata[$sch];
@@ -156,8 +159,10 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	else if ($scriptblock == UCDN::SCRIPT_LAO) { $this->shaper = "L"; }	// LAO shaper
 	else if ($scriptblock == UCDN::SCRIPT_SINHALA) { $this->shaper = "S"; }	// SINHALA shaper
 	else if ($scriptblock == UCDN::SCRIPT_MYANMAR) { $this->shaper = "M"; }	// MYANMAR shaper
+	else if ($scriptblock == UCDN::SCRIPT_NEW_TAI_LUE) { $this->shaper = "E"; }	// SEA South East Asian shaper
+	else if ($scriptblock == UCDN::SCRIPT_CHAM) { $this->shaper = "E"; }		// SEA South East Asian shaper
+	else if ($scriptblock == UCDN::SCRIPT_TAI_THAM) { $this->shaper = "E"; }	// SEA South East Asian shaper
 	else $this->shaper = "";
-
 	// Get scripttag based on actual text script
 	$scripttag = UCDN::$uni_scriptblock[$scriptblock];
 
@@ -165,9 +170,9 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	$GSUBlangsys = '';
 	$GPOSscriptTag = '';
 	$GPOSlangsys = '';
+	$is_old_spec = false;
 
 	$ScriptLang = $this->mpdf->CurrentFont['GSUBScriptLang'];
-
 	if (count($ScriptLang)) { 
 		list($GSUBscriptTag,$is_old_spec) = $this->_getOTLscriptTag($ScriptLang, $scripttag, $scriptblock, $this->shaper, $useOTL, 'GSUB');
 		if ($this->mpdf->fontLanguageOverride && strpos($ScriptLang[$GSUBscriptTag], $this->mpdf->fontLanguageOverride)!==false) {
@@ -186,9 +191,10 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	}
 
 	// else repeat for GPOS
+	// [Font XBRiyaz has GSUB tables for latn, but not GPOS for latn]
 	else if (count($ScriptLang)) {
 		list($GPOSscriptTag,$dummy) = $this->_getOTLscriptTag($ScriptLang, $scripttag, $scriptblock, $this->shaper, $useOTL, 'GPOS');
-		if ($this->mpdf->fontLanguageOverride && strpos($ScriptLang[$GPOSscriptTag], $this->mpdf->fontLanguageOverride)!==false) {
+		if ($GPOSscriptTag && $this->mpdf->fontLanguageOverride && strpos($ScriptLang[$GPOSscriptTag], $this->mpdf->fontLanguageOverride)!==false) {
 			$GPOSlangsys = str_pad($this->mpdf->fontLanguageOverride,4);
 		}
 		else if ($GPOSscriptTag && isset($ScriptLang[$GPOSscriptTag]) && $ScriptLang[$GPOSscriptTag]!='') { 
@@ -216,8 +222,11 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		continue; 
 	}
 
-	$GSUBFeatures = $this->mpdf->CurrentFont['GSUBFeatures'][$GSUBscriptTag][$GSUBlangsys];
-	$GPOSFeatures = $this->mpdf->CurrentFont['GPOSFeatures'][$GPOSscriptTag][$GPOSlangsys];
+	// Don't use MYANMAR shaper unless using v2 scripttag
+	if ($this->shaper == 'M' && $GSUBscriptTag != 'mym2') { $this->shaper = ''; }
+
+	$GSUBFeatures = (isset($this->mpdf->CurrentFont['GSUBFeatures'][$GSUBscriptTag][$GSUBlangsys]) ? $this->mpdf->CurrentFont['GSUBFeatures'][$GSUBscriptTag][$GSUBlangsys] : false);
+	$GPOSFeatures = (isset($this->mpdf->CurrentFont['GPOSFeatures'][$GPOSscriptTag][$GPOSlangsys]) ? $this->mpdf->CurrentFont['GPOSFeatures'][$GPOSscriptTag][$GPOSlangsys] : false);
 
 	$this->assocLigs = array();	// Ligatures[$posarr lpos] => nc
 	$this->assocMarks = array(); 	// assocMarks[$posarr mpos] => array(compID, ligPos)
@@ -228,6 +237,10 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	else {
 		$this->ttfOTLdata = $this->GDEFdata[$this->fontkey]['GSUBGPOStables'];
 	}
+
+
+	if ($this->debugOTL) { $this->_dumpproc('BEGIN', '-', '-', '-', '-', -1, '-', 0); }
+
 
 ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
@@ -276,7 +289,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	}
 
 	if (!isset($this->GSUBdata[$this->fontkey])) {
-		include_once(_MPDF_TTFONTDATAPATH.$this->fontkey.'.GSUBdata.php'); 
+		include(_MPDF_TTFONTDATAPATH.$this->fontkey.'.GSUBdata.php'); 
 		$this->GSLuCoverage = $this->GSUBdata[$this->fontkey]['GSLuCoverage'] = $GSLuCoverage;
 	}
 	else {
@@ -318,15 +331,13 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		$gcm = array();
 		foreach($gcms AS $g) { $gcm[hexdec($g)] = 1; }
 		$this->arabTransparentJoin = $this->arabTransparent + $gcm;
-
-		$this->arabic_shaper($usetags);
+		$this->arabic_shaper($usetags, $GSUBscriptTag);
 
 		//-----------------------------------------------------------------------------------
 		// c. Set Kashida points (after joining occurred - medi, fina, init) but before other substitutions
 		//-----------------------------------------------------------------------------------
 		//if ($scriptblock == UCDN::SCRIPT_ARABIC ) {
 		for ($i=0;$i<count($this->OTLdata);$i++) {
-
 			// Put the kashida marker on the character BEFORE which is inserted the kashida
 			// Kashida marker is inverse of priority i.e. Priority 1 => 7, Priority 7 => 1.
 
@@ -367,10 +378,15 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 				$this->OTLdata[$i]['GPOSinfo']['kashida'] = 5;
 			}
 
-			// Priority 5	RA (0631) FEAE; Ya (064A)  FEF2; Alef Maqsurah (0649) FEF0
-			// Position: Connected to preceding medial BAA (0628) = FE92
-			// Before preceding medial Baa (0628) = FE92
-			else if ($this->OTLdata[$i]['uni']==0xFEAE || $this->OTLdata[$i]['uni']==0xFEF2 || $this->OTLdata[$i]['uni']==0xFEF0) {
+			// Priority 5	RA (0631) FEAE; Ya (064A)  FEF2 FEF4; Alef Maqsurah (0649) FEF0 FBE9
+			// Final or Medial form
+			// Connected to preceding medial BAA (0628) = FE92
+			// Position: Before preceding medial Baa
+			// Although not mentioned in spec, added Farsi Yeh (06CC) FBFD FBFF; equivalent to 064A or 0649
+			else if ($this->OTLdata[$i]['uni']==0xFEAE || $this->OTLdata[$i]['uni']==0xFEF2 || $this->OTLdata[$i]['uni']==0xFEF0
+				|| $this->OTLdata[$i]['uni']==0xFEF4 || $this->OTLdata[$i]['uni']==0xFBE9
+				|| $this->OTLdata[$i]['uni']==0xFBFD || $this->OTLdata[$i]['uni']==0xFBFF
+				) {
 				$checkpos = $i-1;
 				while (isset($this->OTLdata[$checkpos]) && strpos($this->GlyphClassMarks, $this->OTLdata[$checkpos]['hex'])!==false) {
 					$checkpos--; 
@@ -398,7 +414,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 			   &#x641;&#x64e;&#x62a;&#x64f;&#x630;&#x64e;&#x643;&#x651;&#x650;&#x631;
 			*/
 
-			if (!isset($this->OTLdata[$checkpos]['GPOSinfo']['kashida'])) {
+			if (!isset($this->OTLdata[$i]['GPOSinfo']['kashida'])) {
 				if (strpos($this->GSUBdata[$this->GSUBfont]['finals'], $this->OTLdata[$i]['hex'])!==false) {	// ANY OTHER FINAL FORM
 					$this->OTLdata[$i]['GPOSinfo']['kashida'] = 2;
 				}
@@ -407,7 +423,6 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 				}
 			}
 		}
-
 
 		//-----------------------------------------------------------------------------------
 		// d. Apply Presentation Forms GSUB Lookups (+ any discretionary) - Apply one at a time in Feature order
@@ -568,7 +583,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 			$usetags = $this->_applyTagSettings($tags, $GSUBFeatures, $omittags, false) ;
 		}
 		if ($this->shaper == 'K') { 	// Features are applied one at a time, working through each codepoint
-			$this->_applyGSUBrulesKhmer($usetags, $GSUBscriptTag, $GSUBlangsys);
+			$this->_applyGSUBrulesSingly($usetags, $GSUBscriptTag, $GSUBlangsys);
 		}
 		else {
 			$this->_applyGSUBrules($usetags, $GSUBscriptTag, $GSUBlangsys);
@@ -580,7 +595,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	// 5(M). GSUB - Shaper - MYANMAR (ONLY mym2)
 	//==============================
 	// NB Old style 'mymr' is left to go through the default shaper
-	else if ($this->shaper == 'M' && $GSUBscriptTag == 'mym2') {
+	else if ($this->shaper == 'M') {
 		$this->restrictToSyllable = true;
 		//-----------------------------------------------------------------------------------
 		// a. Analyse characters - group as syllables/clusters (Myanmar); invalid diacritics; add dotted circle
@@ -624,6 +639,89 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		// d. Apply Presentation Forms GSUB Lookups (+ any discretionary)
 		//-----------------------------------------------------------------------------------
 		$tags = 'pres abvs blws psts haln rlig calt liga clig mset';
+		$omittags = 'locl ccmp nukt akhn rphf rkrf pref blwf abvf half pstf cfar vatu cjct init medi fina isol med2 fin2 fin3 ljmo vjmo tjmo';
+		$usetags = $tags;
+		if(!empty($this->mpdf->OTLtags)) { 
+			$usetags = $this->_applyTagSettings($tags, $GSUBFeatures, $omittags, false) ;
+		}
+		$this->_applyGSUBrules($usetags, $GSUBscriptTag, $GSUBlangsys);
+		$this->restrictToSyllable = false;
+	}
+
+
+	// 5(E). GSUB - Shaper - SEA South East Asian (New Tai Lue, Cham, Tai Tam)
+	//==============================
+	else if ($this->shaper == 'E') {
+      /* HarfBuzz says: If the designer designed the font for the 'DFLT' script,
+       * use the default shaper.  Otherwise, use the SEA shaper.
+       * Note that for some simple scripts, there may not be *any*
+       * GSUB/GPOS needed, so there may be no scripts found! */
+
+		$this->restrictToSyllable = true;
+		//-----------------------------------------------------------------------------------
+		// a. Analyse characters - group as syllables/clusters (Indic); invalid diacritics; add dotted circle
+		//-----------------------------------------------------------------------------------
+		$sea_category_string = '';
+		foreach($this->OTLdata AS $eid=>$c) {
+			SEA::set_sea_properties($this->OTLdata[$eid], $scriptblock );	// sets ['sea_category'] and ['sea_position']
+			//$c['general_category']
+			//$c['combining_class']
+			//$c['uni'] =  $char;
+
+			$sea_category_string .= SEA::$sea_category_char[$this->OTLdata[$eid]['sea_category']];
+		}
+
+		$broken_syllables = false;
+		SEA::set_syllables($this->OTLdata, $sea_category_string, $broken_syllables);
+		$sea_category_string = '';
+
+		//-----------------------------------------------------------------------------------
+		// b. Apply locl and ccmp shaping forms - before initial re-ordering; GSUB Lookups (one at a time)
+		//-----------------------------------------------------------------------------------
+		$tags = 'locl ccmp';
+		$this->_applyGSUBrulesSingly($tags, $GSUBscriptTag, $GSUBlangsys);
+
+		//-----------------------------------------------------------------------------------
+		// c. Initial Re-ordering
+		//-----------------------------------------------------------------------------------
+		// Find base consonant
+		// Decompose/compose and reorder Matras
+		// Reorder marks to canonical order
+
+		$dottedcircle = false; 
+		if ($broken_syllables) { 
+			if ($this->mpdf->_charDefined($this->mpdf->fonts[$this->fontkey]['cw'],0x25CC) ) { 
+				$dottedcircle = array();
+				$ucd_record = UCDN::get_ucd_record(0x25CC);
+				$dottedcircle[0]['general_category'] = $ucd_record[0];
+				$dottedcircle[0]['bidi_type'] = $ucd_record[2];
+				$dottedcircle[0]['group'] =  'C';
+				$dottedcircle[0]['uni'] =  0x25CC;
+				$dottedcircle[0]['sea_category'] = SEA::OT_GB;
+				$dottedcircle[0]['sea_position'] = SEA::POS_BASE_C;
+
+				$dottedcircle[0]['hex'] =  '025CC';		// TEMPORARY *****
+			}
+		}
+		SEA::initial_reordering($this->OTLdata, $this->GSUBdata[$this->GSUBfont], $broken_syllables, $scriptblock, $dottedcircle);
+
+		//-----------------------------------------------------------------------------------
+		// d. Apply basic shaping forms GSUB Lookups (one at a time)
+		//-----------------------------------------------------------------------------------
+		$tags = 'pref abvf blwf pstf';
+		$this->_applyGSUBrulesSingly($tags, $GSUBscriptTag, $GSUBlangsys);
+
+		//-----------------------------------------------------------------------------------
+		// e. Final Re-ordering
+		//-----------------------------------------------------------------------------------
+
+		SEA::final_reordering($this->OTLdata, $this->GSUBdata[$this->GSUBfont], $scriptblock);
+
+		//-----------------------------------------------------------------------------------
+		// f. Apply Presentation Forms GSUB Lookups (+ any discretionary)
+		//-----------------------------------------------------------------------------------
+		$tags = 'pres abvs blws psts';
+
 		$omittags = 'locl ccmp nukt akhn rphf rkrf pref blwf abvf half pstf cfar vatu cjct init medi fina isol med2 fin2 fin3 ljmo vjmo tjmo';
 		$usetags = $tags;
 		if(!empty($this->mpdf->OTLtags)) { 
@@ -778,20 +876,25 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		//-----------------------------------------------------------------------------------
 		// b. Apply all GSUB Lookups (in order specified in lookup list)
 		//-----------------------------------------------------------------------------------
-		$tags = 'locl ccmp pref blwf abvf pstf pres abvs blws psts haln rlig calt liga clig mset';
+		$tags = 'locl ccmp pref blwf abvf pstf pres abvs blws psts haln rlig calt liga clig mset  RQD';
 		// pref blwf abvf pstf required for Tibetan
+		// " RQD" is a non-standard tag in Garuda font - presumably intended to be used by default ? "ReQuireD"
+		// Being a 3 letter tag is non-standard, and does not allow it to be set by font-feature-settings
+
 
 		/* ?Add these until shapers witten?
 		Hangul: 	ljmo vjmo tjmo
 		*/
 
 		$omittags = '';
-		$usetags = $tags;
+		$useGSUBtags = $tags;
 		if(!empty($this->mpdf->OTLtags)) { 
-			$usetags = $this->_applyTagSettings($tags, $GSUBFeatures, $omittags, false) ;
+			$useGSUBtags = $this->_applyTagSettings($tags, $GSUBFeatures, $omittags, false) ;
 		}
-		$this->_applyGSUBrules($usetags, $GSUBscriptTag, $GSUBlangsys);
-
+		// APPLY GSUB rules (as long as not Latin + SmallCaps - but not OTL smcp)
+		if (!(($this->mpdf->textvar & FC_SMALLCAPS) && $scriptblock == UCDN::SCRIPT_LATIN && strpos($useGSUBtags, 'smcp')===false)) {
+			$this->_applyGSUBrules($useGSUBtags, $GSUBscriptTag, $GSUBlangsys);
+		}
 	}
 
 
@@ -812,7 +915,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		for ($i=count($this->OTLdata)-1;$i>0;$i--) {
 			// Make sure after GSUB that wordend has not been moved - check next char is not in the same syllable
 			if (isset($this->OTLdata[$i]['wordend']) && $this->OTLdata[$i]['wordend'] &&
-					isset($this->OTLdata[$i+1]['uni']) && $this->OTLdata[$i+1]['syllable']!=$this->OTLdata[$i]['syllable']) { 
+					isset($this->OTLdata[$i+1]['uni']) && (!isset($this->OTLdata[$i+1]['syllable']) || !isset($this->OTLdata[$i+1]['syllable']) || $this->OTLdata[$i+1]['syllable']!=$this->OTLdata[$i]['syllable'])) { 
 				array_splice($this->OTLdata, $i+1, 0, $newinfo);
 				$this->_updateLigatureMarks($i, 1);
 			}
@@ -853,7 +956,7 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	// 6. Load GPOS data, Coverage & Lookups
 	//=================================================================
 	if (!isset($this->GPOSdata[$this->fontkey])) {
-		include_once(_MPDF_TTFONTDATAPATH.$this->mpdf->CurrentFont['fontkey'].'.GPOSdata.php'); 
+		include(_MPDF_TTFONTDATAPATH.$this->mpdf->CurrentFont['fontkey'].'.GPOSdata.php'); 
 		$this->LuCoverage = $this->GPOSdata[$this->fontkey]['LuCoverage'] = $LuCoverage;
 	}
 	else {
@@ -897,9 +1000,11 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	// 9. Apply GPOS Lookups (in order specified in lookup list but selecting from specified tags)
 	//==============================
 
-	// APPLY THE GPOS RULES
-	$this->_applyGPOSrules($LookupList, $is_old_spec);
-	// (sets: $this->OTLdata[n]['GPOSinfo'] XPlacement YPlacement XAdvance Entry Exit )
+	// APPLY THE GPOS RULES (as long as not Latin + SmallCaps - but not OTL smcp)
+	if (!(($this->mpdf->textvar & FC_SMALLCAPS) && $scriptblock == UCDN::SCRIPT_LATIN && strpos($useGSUBtags, 'smcp')===false)) {
+		$this->_applyGPOSrules($LookupList, $is_old_spec);
+		// (sets: $this->OTLdata[n]['GPOSinfo'] XPlacement YPlacement XAdvance Entry Exit )
+	}
 
 	// 10. Process cursive text
 	//==============================
@@ -909,19 +1014,21 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 		for ($i=(count($this->OTLdata)-1);$i>=0;$i--) {
 			if (isset($this->Entry[$i]) && isset($this->Entry[$i]['Y']) && $this->Entry[$i]['dir']=='RTL') {
 				$nextbase = $i-1;	// Set as next base ignoring marks (next base reading RTL in logical oder
-				while(strpos($this->GlyphClassMarks, $this->OTLdata[$nextbase]['hex'])!==false) { $nextbase--; }
+				while(isset($this->OTLdata[$nextbase]['hex']) && strpos($this->GlyphClassMarks, $this->OTLdata[$nextbase]['hex'])!==false) { $nextbase--; }
 				if (isset($this->Exit[$nextbase]) && isset($this->Exit[$nextbase]['Y']) ) {
 					$diff = $this->Entry[$i]['Y'] - $this->Exit[$nextbase]['Y'];
 					if ($incurs===false) { $incurs = $diff; }
 					else { $incurs += $diff; }
 					for ($j=($i-1);$j>=$nextbase;$j--) {
-						$this->OTLdata[$j]['GPOSinfo']['YPlacement'] += $incurs;
+						if (isset($this->OTLdata[$j]['GPOSinfo']['YPlacement'])) { $this->OTLdata[$j]['GPOSinfo']['YPlacement'] += $incurs; }
+						else { $this->OTLdata[$j]['GPOSinfo']['YPlacement'] = $incurs; }
 					}
 					if (isset($this->Exit[$i]['X']) && isset($this->Entry[$nextbase]['X']) ) {
 						$adj = -($this->Entry[$i]['X'] - $this->Exit[$nextbase]['X']);
 						// If XAdvance is aplied - in order for PDF to position the Advance correctly need to place it on:
 						// in RTL - the current glyph or the last of any associated marks
-						$this->OTLdata[$nextbase+1]['GPOSinfo']['XAdvance'] += $adj;
+						if (isset($this->OTLdata[$nextbase+1]['GPOSinfo']['XAdvance'])) { $this->OTLdata[$nextbase+1]['GPOSinfo']['XAdvance'] += $adj; }
+						else { $this->OTLdata[$nextbase+1]['GPOSinfo']['XAdvance'] = $adj; }
 					}
 				}
 				else { $incurs = false; }
@@ -941,13 +1048,15 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 					if ($incurs===false) { $incurs = $diff; }
 					else { $incurs += $diff; }
 					for ($j=($i+1);$j<=$nextbase;$j++) {
-						$this->OTLdata[$j]['GPOSinfo']['YPlacement'] += $incurs;
+						if (isset($this->OTLdata[$j]['GPOSinfo']['YPlacement'])) { $this->OTLdata[$j]['GPOSinfo']['YPlacement'] += $incurs; }
+						else { $this->OTLdata[$j]['GPOSinfo']['YPlacement'] = $incurs; }
 					}
 					if (isset($this->Exit[$i]['X']) && isset($this->Entry[$nextbase]['X']) ) {
 						$adj = -($this->Exit[$i]['X'] - $this->Entry[$nextbase]['X']);
 						// If XAdvance is aplied - in order for PDF to position the Advance correctly need to place it on:
 						// in LTR - the next glyph, ignoring marks
-						$this->OTLdata[$nextbase]['GPOSinfo']['XAdvance'] += $adj;
+						if (isset($this->OTLdata[$nextbase]['GPOSinfo']['XAdvance'])) { $this->OTLdata[$nextbase]['GPOSinfo']['XAdvance'] += $adj; }
+						else { $this->OTLdata[$nextbase]['GPOSinfo']['XAdvance'] = $adj; }
 					}
 				}
 				else { $incurs = false; }
@@ -962,6 +1071,8 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 
   }	// end GPOS
 
+	if ($this->debugOTL) { $this->_dumpproc('END', '-', '-', '-', '-', 0, '-', 0); exit; }
+
 	$this->schOTLdata[$sch] = $this->OTLdata;
 	$this->OTLdata = array();
 }	// END foreach subchunk
@@ -971,17 +1082,17 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 	//==============================
 	$newGPOSinfo = array();
 	$newOTLdata = array();
-	$newbidi_type = '';
+	$newchar_data = array();
 	$newgroup = '';
 	$e = '';
 	$ectr = 0;
+
 	for($sch=0;$sch<=$subchunk;$sch++) {
 		for ($i=0;$i<count($this->schOTLdata[$sch]);$i++) {
 			if (isset($this->schOTLdata[$sch][$i]['GPOSinfo'])) {
 				$newGPOSinfo[$ectr] = $this->schOTLdata[$sch][$i]['GPOSinfo'];
 			}
-			$biditype2str = array('L','E','O','R','A','G','V','p','n','s','t','a','c','m','b','&','%','$','#');
-			$newbidi_type .= $biditype2str[($this->schOTLdata[$sch][$i]['bidi_type'])];
+			$newchar_data[$ectr] = array('bidi_class' => $this->schOTLdata[$sch][$i]['bidi_type'], 'uni' => $this->schOTLdata[$sch][$i]['uni']);
 			$newgroup .= $this->schOTLdata[$sch][$i]['group'];
 			$e.=code2utf($this->schOTLdata[$sch][$i]['uni']);
 			if (isset($this->mpdf->CurrentFont['subset'])) {
@@ -992,8 +1103,9 @@ for($sch=0;$sch<=$subchunk;$sch++) {
 
 	}
 	$this->OTLdata['GPOSinfo'] = $newGPOSinfo;
-	$this->OTLdata['bidi_type'] = $newbidi_type ;
+	$this->OTLdata['char_data'] = $newchar_data ;
 	$this->OTLdata['group'] = $newgroup ;
+
 
 	// This leaves OTLdata::GPOSinfo, ::bidi_type, & ::group
 
@@ -1078,7 +1190,10 @@ function _applyGSUBrules($usetags, $scriptTag, $langsys) {
 		$Type = $this->GSUBLookups[$lu]['Type'];
 		$Flag = $this->GSUBLookups[$lu]['Flag'];
 		$MarkFilteringSet = $this->GSUBLookups[$lu]['MarkFilteringSet'];
-
+		$tagInt = 1;
+		if (preg_match('/'.$tag.'([0-9]{1,2})/', $usetags, $m)) {
+			$tagInt = $m[1];
+		}
 		$ptr = 0;
 		// Test each glyph sequentially
 		while($ptr < (count($this->OTLdata))) {	// whilst there is another glyph ..0064
@@ -1089,7 +1204,7 @@ function _applyGSUBrules($usetags, $scriptTag, $langsys) {
 				// NB Coverage only looks at glyphs for position 1 (esp. 7.3 and 8.3)
 				if (isset($this->GSLuCoverage[$lu][$c][$currGID])) {
 					// Get rules from font GSUB subtable
-					$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $tag, 0);
+					$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $tag, 0, $tagInt);
 
 					if ($shift) { break; }
 				}
@@ -1101,7 +1216,7 @@ function _applyGSUBrules($usetags, $scriptTag, $langsys) {
 	}
 }
 
-function _applyGSUBrulesKhmer($usetags, $scriptTag, $langsys) {
+function _applyGSUBrulesSingly($usetags, $scriptTag, $langsys) {
 	// Features are applied one at a time, working through each codepoint
 
 	$GSUBFeatures = $this->mpdf->CurrentFont['GSUBFeatures'][$scriptTag][$langsys];
@@ -1127,12 +1242,16 @@ function _applyGSUBrulesKhmer($usetags, $scriptTag, $langsys) {
 				$Type = $this->GSUBLookups[$lu]['Type'];
 				$Flag = $this->GSUBLookups[$lu]['Flag'];
 				$MarkFilteringSet = $this->GSUBLookups[$lu]['MarkFilteringSet'];
+				$tagInt = 1;
+				if (preg_match('/'.$tag.'([0-9]{1,2})/', $usetags, $m)) {
+					$tagInt = $m[1];
+				}
 
 				foreach($this->GSUBLookups[$lu]['Subtables'] AS $c=>$subtable_offset) {
 					// NB Coverage only looks at glyphs for position 1 (esp. 7.3 and 8.3)
 					if (isset($this->GSLuCoverage[$lu][$c][$currGID])) {
 						// Get rules from font GSUB subtable
-						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $tag, 0);
+						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $tag, 0, $tagInt);
 
 						if ($shift) { break 2; }
 					}
@@ -1169,6 +1288,10 @@ function _applyGSUBrulesMyanmar($usetags, $scriptTag, $langsys) {
 			$Type = $this->GSUBLookups[$lu]['Type'];
 			$Flag = $this->GSUBLookups[$lu]['Flag'];
 			$MarkFilteringSet = $this->GSUBLookups[$lu]['MarkFilteringSet'];
+			$tagInt = 1;
+			if (preg_match('/'.$tag.'([0-9]{1,2})/', $usetags, $m)) {
+				$tagInt = $m[1];
+			}
 
 			$ptr = 0;
 			// Test each glyph sequentially
@@ -1180,7 +1303,7 @@ function _applyGSUBrulesMyanmar($usetags, $scriptTag, $langsys) {
 					// NB Coverage only looks at glyphs for position 1 (esp. 7.3 and 8.3)
 					if (isset($this->GSLuCoverage[$lu][$c][$currGID])) {
 						// Get rules from font GSUB subtable
-						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $usetag, 0);
+						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $usetag, 0, $tagInt);
 
 						if ($shift) { break; }
 					}
@@ -1218,6 +1341,10 @@ function _applyGSUBrulesIndic($usetags, $scriptTag, $langsys, $is_old_spec) {
 			$Type = $this->GSUBLookups[$lu]['Type'];
 			$Flag = $this->GSUBLookups[$lu]['Flag'];
 			$MarkFilteringSet = $this->GSUBLookups[$lu]['MarkFilteringSet'];
+			$tagInt = 1;
+			if (preg_match('/'.$tag.'([0-9]{1,2})/', $usetags, $m)) {
+				$tagInt = $m[1];
+			}
 
 			$ptr = 0;
 			// Test each glyph sequentially
@@ -1242,7 +1369,7 @@ function _applyGSUBrulesIndic($usetags, $scriptTag, $langsys, $is_old_spec) {
 							if (!($this->OTLdata[$ptr]['mask'] & $mask)) { continue; }
 						}
 						// Get rules from font GSUB subtable
-						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $usetag, $is_old_spec);
+						$shift = $this->_applyGSUBsubtable($lu, $c, $ptr, $currGlyph, $currGID, ($subtable_offset - $this->GSUB_offset), $Type, $Flag, $MarkFilteringSet, $this->GSLuCoverage[$lu][$c], 0, $usetag, $is_old_spec, $tagInt);
 
 						if ($shift) { break; }
 					}
@@ -1349,8 +1476,7 @@ function _applyGSUBsubtableSpecial($lookupID, $subtable, $ptr, $currGlyph, $curr
 	return 0;
 }
 
-function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $subtable_offset, $Type, $Flag, $MarkFilteringSet, $LuCoverage, $level=0, $currentTag, $is_old_spec) {
-
+function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $subtable_offset, $Type, $Flag, $MarkFilteringSet, $LuCoverage, $level=0, $currentTag, $is_old_spec, $tagInt) {
 	$ignore = $this->_getGCOMignoreString($Flag, $MarkFilteringSet);
 
 	// Lets start
@@ -1385,6 +1511,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 		$substitute = $this->glyphToChar($GlyphID);
 		$shift = $this->GSUBsubstitute($ptr, $substitute, $Type );
+		if ($this->debugOTL && $shift) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 		if ($shift) return 1;
 		return 0;
 	}
@@ -1410,6 +1537,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		}
 
 		$shift = $this->GSUBsubstitute($ptr, $SubstituteGlyphs, $Type  );
+		if ($this->debugOTL && $shift) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 		if ($shift) return $shift;
 		return 0;
 	}
@@ -1421,24 +1549,30 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		if ($this->_checkGCOMignore($Flag, $currGlyph, $MarkFilteringSet)) { return 0; }
 		$Coverage = $subtable_offset + $this->read_ushort();
 		$AlternateSetCount = $this->read_short();
-
 		///////////////////////////////////////////////////////////////////////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		// Need to set alternate if set by CSS3 font-feature for a tag
+		// Need to set alternate IF set by CSS3 font-feature for a tag
 		// i.e. if this is 'salt' alternate may be set to 2
 		// default value will be $alt=1 ( === index of 0 in list of alternates)
-		$alt = 0;	// $alt=1 points to Alternative[0]
+		$alt = 1;	// $alt=1 points to Alternative[0]
+		if ($tagInt>1) { $alt = $tagInt; }
 		///////////////////////////////////////////////////////////////////////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-		if ($alt > $AlternateSetCount || $alt < 1) { return 0; }	// If specified alternate not present, cancel [ or could default $alt = 1 ?]
+		if ($alt == 0) { return 0; }	// If specified alternate not present, cancel [ or could default $alt = 1 ?]
+
 		$GlyphPos = $LuCoverage[$currGID];
 		$this->skip($GlyphPos * 2);
 
 		$AlternateSets = $subtable_offset + $this->read_short();
 		$this->seek($AlternateSets );
+
+		$AlternateGlyphCount = $this->read_short();
+		if ($alt > $AlternateGlyphCount) { return 0; }	// If specified alternate not present, cancel [ or could default $alt = 1 ?]
+
 		$this->skip(($alt-1) * 2);
 		$GlyphID = $this->read_ushort();
 
 		$substitute = $this->glyphToChar($GlyphID);
 		$shift = $this->GSUBsubstitute($ptr, $substitute, $Type );
+		if ($this->debugOTL && $shift) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 		if ($shift) return 1;
 		return 0;
 	}
@@ -1492,6 +1626,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 			if ($match) {
 				$shift = $this->GSUBsubstitute($ptr, $substitute, $Type, $GlyphPos );	// GlyphPos contains positions to set null
+				if ($this->debugOTL && $shift) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 				if ($shift) return ($spos-$ptr+1-($CompCount-1));
 			}
 
@@ -1506,8 +1641,76 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		//===========
 		// Format 1: Simple Context Glyph Substitution
 		//===========
-		if ($SubstFormat==1) {	
-			die("GSUB Lookup Type ".$Type." Format ".$SubstFormat." not TESTED YET."); 
+		if ($SubstFormat==1) {
+			$CoverageTableOffset = $subtable_offset + $this->read_ushort();
+			$SubRuleSetCount = $this->read_ushort();
+			$SubRuleSetOffset = array();
+			for ($b=0;$b<$SubRuleSetCount;$b++) {
+				$offset = $this->read_ushort();
+				if ($offset==0x0000) {
+					$SubRuleSetOffset[] = $offset;
+				}
+				else {
+					$SubRuleSetOffset[] = $subtable_offset + $offset;
+				}
+			}
+
+			// SubRuleSet tables: All contexts beginning with the same glyph
+			// Select the SubRuleSet required using the position of the glyph in the coverage table
+			$GlyphPos = $LuCoverage[$currGID];
+			if ($SubRuleSetOffset[$GlyphPos]>0) {
+					$this->seek($SubRuleSetOffset[$GlyphPos]);
+					$SubRuleCnt = $this->read_ushort();
+					$SubRule = array();
+					for($b=0;$b<$SubRuleCnt;$b++) {
+						$SubRule[$b] = $SubRuleSetOffset[$GlyphPos]+$this->read_ushort();
+					}
+					for($b=0;$b<$SubRuleCnt;$b++) {		// EACH RULE
+						$this->seek($SubRule[$b]);
+						$InputGlyphCount = $this->read_ushort();
+						$SubstCount = $this->read_ushort();
+
+						$Backtrack = array();
+						$Lookahead = array();
+						$Input = array();
+						$Input[0] = $this->OTLdata[$ptr]['uni'];
+						for ($r=1;$r<$InputGlyphCount;$r++) {
+							$gid = $this->read_ushort();
+							$Input[$r] = $this->glyphToChar($gid);
+						}
+						$matched = $this->checkContextMatch($Input, $Backtrack, $Lookahead, $ignore, $ptr);
+						if ($matched) {
+							if ($this->debugOTL) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
+							for ($p=0;$p<$SubstCount;$p++) {	// EACH LOOKUP
+								$SequenceIndex[$p] = $this->read_ushort();
+								$LookupListIndex[$p] = $this->read_ushort();
+							}
+
+							for ($p=0;$p<$SubstCount;$p++) {
+								// Apply  $LookupListIndex  at   $SequenceIndex
+								if ($SequenceIndex[$p] >= $InputGlyphCount) { continue; }
+								$lu = $LookupListIndex[$p];
+								$luType = $this->GSUBLookups[$lu]['Type'];
+								$luFlag = $this->GSUBLookups[$lu]['Flag'];
+								$luMarkFilteringSet = $this->GSUBLookups[$lu]['MarkFilteringSet'];
+
+								$luptr = $matched[$SequenceIndex[$p]];
+								$lucurrGlyph = $this->OTLdata[$luptr]['hex'];
+								$lucurrGID = $this->OTLdata[$luptr]['uni'];
+
+								foreach($this->GSUBLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
+									$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset) , $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec, $tagInt);
+									if ($shift) { break; }
+								}
+							}
+
+							if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+							else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
+
+						}
+					}
+
+			}
 			return 0;
 		}
 
@@ -1547,6 +1750,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						$this->seek($SubClassRule[$b]);
 						$InputGlyphCount = $this->read_ushort();
 						$SubstCount = $this->read_ushort();
+						$Input = array();
 						for ($r=1;$r<$InputGlyphCount;$r++) {
 							$Input[$r] = $this->read_ushort();
 						}
@@ -1560,7 +1764,8 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 							//  NB starts at 1 
 							for ($gcl=1;$gcl<$InputGlyphCount;$gcl++) {
 								$classindex = $Input[$gcl];
-								$inputGlyphs[$gcl] = $InputClasses[$classindex];
+								if (isset($InputClasses[$classindex])) { $inputGlyphs[$gcl] = $InputClasses[$classindex]; }
+								else { $inputGlyphs[$gcl] = ''; }
 							}
 						}
 
@@ -1575,6 +1780,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 						$matched = $this->checkContextMatchMultipleUni($inputGlyphs, $backtrackGlyphs, $lookaheadGlyphs, $ignore, $ptr, $class0excl);
 						if ($matched) {
+							if ($this->debugOTL) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 							for ($p=0;$p<$SubstCount;$p++) {	// EACH LOOKUP
 								$SequenceIndex[$p] = $this->read_ushort();
 								$LookupListIndex[$p] = $this->read_ushort();
@@ -1593,12 +1799,12 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 								$lucurrGID = $this->OTLdata[$luptr]['uni'];
 
 								foreach($this->GSUBLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
-									$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset) , $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec);
+									$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset) , $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec, $tagInt);
 									if ($shift) { break; }
 								}
 							}
 
-							if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+							if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
 							else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 
 						}
@@ -1670,6 +1876,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 				$matched = $this->checkContextMatch($Input, $Backtrack, $Lookahead, $ignore, $ptr);
 				if ($matched) {
+					if ($this->debugOTL) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 					$SubstCount = $this->read_ushort();
 					for ($p=0;$p<$SubstCount;$p++) {
 						// SubstLookupRecord
@@ -1689,11 +1896,11 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						$lucurrGID = $this->OTLdata[$luptr]['uni'];
 
 						foreach($this->GSUBLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
-							$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset), $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec);
+							$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset), $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec, $tagInt);
 							if ($shift) { break; }
 						}
 					}
-					if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+					if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
 					else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 				}
 
@@ -1776,20 +1983,22 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 							//  NB starts at 1 
 							for ($gcl=1;$gcl<$InputGlyphCount;$gcl++) {
 								$classindex = $Input[$gcl];
-								$inputGlyphs[$gcl] = $InputClasses[$classindex];
+								if (isset($InputClasses[$classindex])) { $inputGlyphs[$gcl] = $InputClasses[$classindex]; }
+								else { $inputGlyphs[$gcl] = ''; }
 							}
 						}
 
 						// Class 0 contains all the glyphs NOT in the other classes
 						$class0excl = array();
 						for ($gc=1;$gc<=count($InputClasses);$gc++) {
-							if (is_array($InputClasses[$gc])) $class0excl = $class0excl + $InputClasses[$gc];
+							if (isset($InputClasses[$gc])) $class0excl = $class0excl + $InputClasses[$gc];
 						}
 
 						if ($BacktrackGlyphCount) {
 							for ($gcl=0;$gcl<$BacktrackGlyphCount;$gcl++) {
 								$classindex = $Backtrack[$gcl];
-								$backtrackGlyphs[$gcl] = $BacktrackClasses[$classindex];
+								if (isset($BacktrackClasses[$classindex])) { $backtrackGlyphs[$gcl] = $BacktrackClasses[$classindex]; }
+								else { $backtrackGlyphs[$gcl] = ''; }
 							}
 						}
 						else { $backtrackGlyphs = array(); }
@@ -1797,27 +2006,29 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						// Class 0 contains all the glyphs NOT in the other classes
 						$bclass0excl = array();
 						for ($gc=1;$gc<=count($BacktrackClasses);$gc++) {
-							if (is_array($BacktrackClasses[$gc])) $bclass0excl = $bclass0excl + $BacktrackClasses[$gc];
+							if (isset($BacktrackClasses[$gc])) $bclass0excl = $bclass0excl + $BacktrackClasses[$gc];
 						}
 
 
 						if ($LookaheadGlyphCount) {
 							for ($gcl=0;$gcl<$LookaheadGlyphCount;$gcl++) {
 								$classindex = $Lookahead[$gcl];
-								$lookaheadGlyphs[$gcl] = $LookaheadClasses[$classindex];
+								if (isset($LookaheadClasses[$classindex])) { $lookaheadGlyphs[$gcl] = $LookaheadClasses[$classindex]; }
+								else { $lookaheadGlyphs[$gcl] = ''; }
 							}
 						}
 						else { $lookaheadGlyphs = array(); }
 
-						// Class 0 contains all the glyphs NOT in the other classes
+ 						// Class 0 contains all the glyphs NOT in the other classes
 						$lclass0excl = array();
 						for ($gc=1;$gc<=count($LookaheadClasses);$gc++) {
-							if (is_array($LookaheadClasses[$gc])) $lclass0excl = $lclass0excl + $LookaheadClasses[$gc];
+							if (isset($LookaheadClasses[$gc])) $lclass0excl = $lclass0excl + $LookaheadClasses[$gc];
 						}
 
 
 						$matched = $this->checkContextMatchMultipleUni($inputGlyphs, $backtrackGlyphs, $lookaheadGlyphs, $ignore, $ptr, $class0excl, $bclass0excl, $lclass0excl );
 						if ($matched) {
+							if ($this->debugOTL) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 							$SubstCount = $this->read_ushort();
 							for ($p=0;$p<$SubstCount;$p++) {	// EACH LOOKUP
 								$SequenceIndex[$p] = $this->read_ushort();
@@ -1837,12 +2048,12 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 								$lucurrGID = $this->OTLdata[$luptr]['uni'];
 
 								foreach($this->GSUBLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
-									$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset) , $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec);
+									$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset) , $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec, $tagInt);
 									if ($shift) { break; }
 								}
 							}
 
-							if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+							if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
 							else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 
 						}
@@ -1897,6 +2108,7 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 			$matched = $this->checkContextMatchMultiple($CoverageInputGlyphs, $CoverageBacktrackGlyphs, $CoverageLookaheadGlyphs , $ignore, $ptr);
 			if ($matched) {
+				if ($this->debugOTL) { $this->_dumpproc('GSUB', $lookupID, $subtable, $Type, $SubstFormat, $ptr, $currGlyph, $level); }
 
 				$this->seek($save_pos);	// Return to just after PosCount
 				for ($p=0;$p<$SubstCount;$p++) {
@@ -1917,11 +2129,11 @@ function _applyGSUBsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 					$lucurrGID = $this->OTLdata[$luptr]['uni'];
 
 					foreach($this->GSUBLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
-						$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset), $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec);
+						$shift = $this->_applyGSUBsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GSUB_offset), $luType, $luFlag, $luMarkFilteringSet, $this->GSLuCoverage[$lu][$luc], 1, $currentTag, $is_old_spec, $tagInt);
 						if ($shift) { break; }
 					}
 				}
-				if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+				if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return (isset($shift) ? $shift : 0) ; }	/* OTL_FIX_3 */
 				else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 			}
 
@@ -2027,8 +2239,8 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 				$newOTLdata[$i]['myanmar_category'] = $this->OTLdata[$pos]['myanmar_category'];
 				$newOTLdata[$i]['myanmar_position'] = $this->OTLdata[$pos]['myanmar_position'];
 			}
-			$newOTLdata[$i]['mask'] = $this->OTLdata[$pos]['mask'];
-			$newOTLdata[$i]['syllable'] = $this->OTLdata[$pos]['syllable'];
+			if (isset($this->OTLdata[$pos]['mask'])) { $newOTLdata[$i]['mask'] = $this->OTLdata[$pos]['mask']; }
+			if (isset($this->OTLdata[$pos]['syllable'])) { $newOTLdata[$i]['syllable'] = $this->OTLdata[$pos]['syllable']; }
 
 		}
 		if ($this->shaper=='K' || $this->shaper=='T' || $this->shaper=='L') {
@@ -2050,7 +2262,8 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 		// If all components of the ligature are marks (and in the same syllable), we call this a mark ligature.
 		$contains_marks = false;
 		$contains_nonmarks = false;
-		$current_syllable = $this->OTLdata[$pos]['syllable'];
+		if (isset($this->OTLdata[$pos]['syllable'])) { $current_syllable = $this->OTLdata[$pos]['syllable']; }
+		else { $current_syllable = 0; }
 		for($i=0;$i<count($GlyphPos);$i++) {
 			// If subsequent components are not Marks as well - don't ligate
 			$unistr = $this->OTLdata[$GlyphPos[$i]]['hex'];
@@ -2083,8 +2296,15 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 				// If first component was NOT attached to a previous ligature component,
 				// all subsequent components should also NOT be attached to any ligature component,
 				if ($firstMarkAssoc != $nextMarkAssoc ) { 
-					// unless they are attached to the first component itself! 
-					if (!is_array($nextMarkAssoc) || $nextMarkAssoc['ligPos']!= $pos) { return; }
+					// unless they are attached to the first component itself!
+		//			if (!is_array($nextMarkAssoc) || $nextMarkAssoc['ligPos']!= $pos) { return; }
+
+					// Update/Edit - In test with myanmartext font 
+					// &#x1004;&#x103a;&#x1039;&#x1000;&#x1039;&#x1000;&#x103b;&#x103c;&#x103d;&#x1031;&#x102d;
+					// => Lookup 17  E003 E066B E05A 102D
+					// E003 and 102D should form a mark ligature, but 102D is already associated with (non-mark) ligature E05A
+					// So instead of disallowing the mark ligature to form, just dissociate...
+					if (!is_array($nextMarkAssoc) || $nextMarkAssoc['ligPos']!= $pos) { unset($this->assocMarks[$GlyphPos[$i]]); }
 				}
 			}
 
@@ -2107,7 +2327,7 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
    * - Ligatures cannot be formed across glyphs attached to different components
    *   of previous ligatures.  Eg. the sequence is LAM,SHADDA,LAM,FATHA,HEH, and
    *   LAM,LAM,HEH form a ligature, leaving SHADDA,FATHA next to eachother.
-   *   However, it would be wrong to ligate that SHADDA,FATHA sequence.o
+   *   However, it would be wrong to ligate that SHADDA,FATHA sequence.
    *   There is an exception to this: If a ligature tries ligating with marks that
    *   belong to it itself, go ahead, assuming that the font designer knows what
    *   they are doing (otherwise it can break Indic stuff when a matra wants to
@@ -2141,7 +2361,7 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 			 	// While next char to right is a mark (but not the next matched glyph)
 				// ?? + also include a Mark Ligature here
 				$ic = 1;
-				while(strpos($this->GlyphClassMarks, $this->OTLdata[($GlyphPos[$i]+$ic)]['hex'])!== false && (($i==count($GlyphPos)-1) || ($GlyphPos[$i]+$ic) < $GlyphPos[$i+1])) {
+				while((($i==count($GlyphPos)-1) || (isset($GlyphPos[$i+1]) && ($GlyphPos[$i]+$ic) < $GlyphPos[$i+1])) && isset($this->OTLdata[($GlyphPos[$i]+$ic)]) && strpos($this->GlyphClassMarks, $this->OTLdata[($GlyphPos[$i]+$ic)]['hex'])!== false) {
 					$newComp = $currComp;
 					if (isset($this->assocMarks[$GlyphPos[$i]+$ic])) {	// One of the inbetween Marks is already associated with a Lig
 						// OK as long as it is associated with the current Lig
@@ -2179,8 +2399,11 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 		// KASHIDA: If forming a ligature when the last component was identified as a kashida point (final form)
 		// If previous/first component of ligature is a medial form, then keep this as a kashida point
 		// TEST (Arabic Typesetting) &#x64a;&#x64e;&#x646;&#x62a;&#x64f;&#x645;
-		$ka = $this->OTLdata[$GlyphPos[(count($GlyphPos)-1)]]['GPOSinfo']['kashida']; 
-		if ($ka==1 && $this->OTLdata[$pos]['form']==3) { $newOTLdata[0]['GPOSinfo']['kashida'] = $ka; }
+		$ka = 0;
+		if (isset($this->OTLdata[$GlyphPos[(count($GlyphPos)-1)]]['GPOSinfo']['kashida'])) {
+			$ka = $this->OTLdata[$GlyphPos[(count($GlyphPos)-1)]]['GPOSinfo']['kashida']; 
+		}
+		if ($ka==1 && isset($this->OTLdata[$pos]['form']) && $this->OTLdata[$pos]['form']==3) { $newOTLdata[0]['GPOSinfo']['kashida'] = $ka; }
 
 		$newOTLdata[0]['uni'] = $substitute;
 		$newOTLdata[0]['hex'] = $this->unicode_hex($substitute);
@@ -2193,8 +2416,8 @@ function GSUBsubstitute($pos, $substitute, $Type, $GlyphPos=NULL ) {
 			$newOTLdata[0]['myanmar_category'] = $this->OTLdata[$pos]['myanmar_category'];
 			$newOTLdata[0]['myanmar_position'] = $this->OTLdata[$pos]['myanmar_position'];
 		}
-		$newOTLdata[0]['mask'] = $this->OTLdata[$pos]['mask'];
-		$newOTLdata[0]['syllable'] = $this->OTLdata[$pos]['syllable'];
+		if (isset($this->OTLdata[$pos]['mask'])) {$newOTLdata[0]['mask'] = $this->OTLdata[$pos]['mask']; }
+		if (isset($this->OTLdata[$pos]['syllable'])) {$newOTLdata[0]['syllable'] = $this->OTLdata[$pos]['syllable']; }
 
 		$newOTLdata[0]['is_ligature'] = true;
 
@@ -2373,7 +2596,7 @@ function arabic_initialise() {
 }
 
 
-function arabic_shaper($usetags) {
+function arabic_shaper($usetags, $scriptTag) {
 		$chars = array();
 		for($i=0;$i<count($this->OTLdata);$i++) {
 			$chars[] = $this->OTLdata[$i]['hex'];
@@ -2387,18 +2610,18 @@ function arabic_shaper($usetags) {
 			$crntChar = $chars[$i];
 			if ($i > 0){ $prevChar = hexdec($chars[$i - 1]); }
 			else{ $prevChar = NULL; }
-			if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) ) {
+			if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) && isset($chars[$i - 2]) ) {
 				$prevChar = hexdec($chars[$i - 2]);
-				if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) ) {
+				if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) && isset($chars[$i - 3])) {
 					$prevChar = hexdec($chars[$i - 3]);
-					if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) ) {
+					if ($prevChar && isset($this->arabTransparentJoin[$prevChar]) && isset($chars[$i - 4])) {
 						$prevChar = hexdec($chars[$i - 4]);
 					}
 				}
 			}
 			if ($crntChar && isset($this->arabTransparentJoin[ hexdec($crntChar)]) ) {
 				// If next_char = RightJoining && prev_char = LeftJoining:
-				if ($chars[$i + 1] && isset($this->arabRightJoining[ hexdec($chars[$i + 1]) ])  && $prevChar && isset($this->arabLeftJoining[$prevChar])) {
+				if (isset($chars[$i + 1]) && $chars[$i + 1] && isset($this->arabRightJoining[ hexdec($chars[$i + 1]) ])  && $prevChar && isset($this->arabLeftJoining[$prevChar])) {
 					$output[] = $this->get_arab_glyphs($crntChar, 1, $chars, $i, $scriptTag, $usetags);	// <final> form
 				} 
 				else {
@@ -2743,20 +2966,60 @@ function _applyGPOSrules($LookupList, $is_old_spec=false) {
 			// Lookup Type 9: Extension positioning
 	//////////////////////////////////////////////////////////////////////////////////
 function _applyGPOSvaluerecord($basepos,$Value) {
+
+	// If current glyph is a mark with a defined width, any XAdvance is considered to REPLACE the character Advance Width
+	// Test case <div style="font-family:myanmartext">&#x1004;&#x103a;&#x1039;&#x1000;&#x1039;&#x1000;&#x103b;&#x103c;&#x103d;&#x1031;&#x102d;</div>
+	if (strpos($this->GlyphClassMarks, $this->OTLdata[$basepos]['hex'])!==false) { 
+		$cw = round($this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$basepos]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000);	// convert back to font design units
+	}
+	else { 
+		$cw = 0; 
+	}
+
 	$apos = $this->_getXAdvancePos($basepos);
-	// For LTR apply XAdvanceL to the last mark following the base = at $apos
-	// For RTL apply XAdvanceR to base = at $basepos
-	if ($Value['XAdvance']) {
-		$this->OTLdata[$apos]['GPOSinfo']['XAdvanceL'] += $Value['XAdvance'];
-		$this->OTLdata[$basepos]['GPOSinfo']['XAdvanceR'] += $Value['XAdvance'];
+
+	if (isset($Value['XAdvance']) && ($Value['XAdvance']-$cw) != 0) {
+		// However DON'T REPLACE the character Advance Width if Advance Width is negative
+		// Test case <div style="font-family: dejavusansmono">&#x440;&#x443;&#x301;&#x441;&#x441;&#x43a;&#x438;&#x439;</div>
+		if ($Value['XAdvance'] < 0) { $cw = 0; }
+
+		// For LTR apply XAdvanceL to the last mark following the base = at $apos
+		// For RTL apply XAdvanceR to base = at $basepos
+		if (isset($this->OTLdata[$apos]['GPOSinfo']['XAdvanceL'])) { $this->OTLdata[$apos]['GPOSinfo']['XAdvanceL'] += $Value['XAdvance']-$cw; }
+		else { $this->OTLdata[$apos]['GPOSinfo']['XAdvanceL'] = $Value['XAdvance']-$cw; }
+		if (isset($this->OTLdata[$basepos]['GPOSinfo']['XAdvanceR'])) { $this->OTLdata[$basepos]['GPOSinfo']['XAdvanceR'] += $Value['XAdvance']-$cw; }
+		else { $this->OTLdata[$basepos]['GPOSinfo']['XAdvanceR'] = $Value['XAdvance']-$cw; }
 	}
 
 	// Any XPlacement (? and Y Placement) apply to base and marks (from basepos to apos)
 	for ($a=$basepos;$a<=$apos;$a++) {
-		if ($Value['XPlacement']) $this->OTLdata[$a]['GPOSinfo']['XPlacement'] += $Value['XPlacement'];
-		if ($Value['YPlacement']) $this->OTLdata[$a]['GPOSinfo']['YPlacement'] += $Value['YPlacement'];
+		if (isset($Value['XPlacement'])) { 
+			if (isset($this->OTLdata[$a]['GPOSinfo']['XPlacement'])) { $this->OTLdata[$a]['GPOSinfo']['XPlacement'] += $Value['XPlacement']; }
+			else { $this->OTLdata[$a]['GPOSinfo']['XPlacement'] = $Value['XPlacement']; }
+		}
+		if (isset($Value['YPlacement'])) { 
+			if (isset($this->OTLdata[$a]['GPOSinfo']['YPlacement'])) { $this->OTLdata[$a]['GPOSinfo']['YPlacement'] += $Value['YPlacement']; }
+			else { $this->OTLdata[$a]['GPOSinfo']['YPlacement'] = $Value['YPlacement']; }
+		}
 	}
 }
+
+
+
+// If XAdvance is aplied to $ptr - in order for PDF to position the Advance correctly need to place it on
+// the last of any Marks which immediately follow the current glyph
+function _getXAdvancePos($pos) {
+	// NB Not all fonts have all marks specified in GlyphClassMarks
+
+	// If the current glyph is not a base (but a mark) then ignore this, and apply to the current position
+	if (strpos($this->GlyphClassMarks, $this->OTLdata[$pos]['hex'])!==false) { return $pos; }
+
+	while(isset($this->OTLdata[$pos+1]['hex']) && strpos($this->GlyphClassMarks, $this->OTLdata[$pos+1]['hex'])!==false) { $pos++; }
+	return $pos ;
+}
+
+
+
 
 function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $subtable_offset, $Type, $Flag, $MarkFilteringSet, $LuCoverage, $tag, $level=0, $is_old_spec) {
 	if (($Flag  & 0x0001) == 1) { $dir = 'RTL'; }	// only used for Type 3
@@ -2767,7 +3030,6 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 	$this->seek($subtable_offset);
 	$PosFormat = $this->read_ushort();
 
-
 	////////////////////////////////////////////////////////////////////////////////
 	// LookupType 1: Single adjustment 	Adjust position of a single glyph (e.g. SmallCaps/Sups/Subs)
 	////////////////////////////////////////////////////////////////////////////////
@@ -2775,7 +3037,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		//===========
 		// Format 1: 
 		//===========
-		if ($PosFormat==1) {	
+		if ($PosFormat==1) {
 			$Coverage = $subtable_offset + $this->read_ushort();
 			$ValueFormat = $this->read_ushort();
 			$Value = $this->_getValueRecord($ValueFormat);
@@ -2791,8 +3053,8 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			$this->skip($GlyphPos * 2 * $this->count_bits($ValueFormat) );
 			$Value = $this->_getValueRecord($ValueFormat);
 		}
-
 		$this->_applyGPOSvaluerecord($ptr,$Value);
+		if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 		return 1; 
 	}
 
@@ -2809,6 +3071,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		//===========
 		if ($PosFormat==1) {	
 			$PairSetCount = $this->read_ushort();
+			$PairSetOffset = array();
 			for($p=0;$p<$PairSetCount;$p++) {
 				$PairSetOffset[] = $subtable_offset + $this->read_ushort();
 			}
@@ -2823,7 +3086,6 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						$SecondGlyph = $this->glyphToChar($gid); 
 						$FirstGlyph = $this->OTLdata[$ptr]['uni']; 
 
-
 						$checkpos = $ptr;
 						$checkpos++;
 						while (isset($this->OTLdata[$checkpos]) && strpos($ignore, $this->OTLdata[$checkpos]['hex'])!==false) {
@@ -2837,15 +3099,16 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						if ($matchedpos !== false) {
 							$Value1 = $this->_getValueRecord($ValueFormat1);
 							$Value2 = $this->_getValueRecord($ValueFormat2);
-
 							if($ValueFormat1) {
 								$this->_applyGPOSvaluerecord($ptr,$Value1);
 							}
 							if($ValueFormat2) { 
 								$this->_applyGPOSvaluerecord($matchedpos,$Value2);
+								if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 								return $matchedpos - $ptr +1; 
 							}
-							else { return $matchedpos - $ptr; }
+							if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
+							return $matchedpos - $ptr;
 						}
 						else {
 							$this->skip($sizeOfPair);
@@ -2883,12 +3146,12 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 			$SecondGlyph = $this->OTLdata[$matchedpos]['uni'];
 			for($i=0;$i<$Class1Count;$i++) {
-				if (count($Class1[$i])) {
+				if (isset($Class1[$i]) && count($Class1[$i])) {
 					$FirstClassPos = array_search($FirstGlyph, $Class1[$i]);
 					if ($FirstClassPos === false) { continue; }
 					else {
 						for($j=0;$j<$Class2Count;$j++) {
-							if (count($Class2[$j])) {
+							if (isset($Class2[$j]) && count($Class2[$j])) {
 
 									$SecondClassPos = array_search($SecondGlyph, $Class2[$j]);
 									if ($SecondClassPos === false) { continue; }
@@ -2904,9 +3167,11 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 									}
 									if($ValueFormat2) { 
 										$this->_applyGPOSvaluerecord($matchedpos,$Value2);
+										if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 										return $matchedpos - $ptr +1; 
 									}
-									else { return $matchedpos - $ptr; }
+									if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
+									return $matchedpos - $ptr;
 							}
 						}
 					}
@@ -2933,10 +3198,10 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			$EntryAnchor += $subtable_offset;
 			list($x,$y) = $this->_getAnchorTable($EntryAnchor);
 			if ($dir == 'RTL') {
-				if (round($pdfWidth) == round($x * 1000/ $this->mpdf->CurrentFont['desc']['unitsPerEm']) ) {
+				if (round($pdfWidth) == round($x * 1000/ $this->mpdf->CurrentFont['unitsPerEm']) ) {
 					$x = 0;
 				}
-				else { $x = $x - ($pdfWidth * $this->mpdf->CurrentFont['desc']['unitsPerEm']/1000); }
+				else { $x = $x - ($pdfWidth * $this->mpdf->CurrentFont['unitsPerEm']/1000); }
 			}
 
 			$this->Entry[$ptr] = array('X'=>$x, 'Y'=>$y, 'dir'=>$dir);
@@ -2945,13 +3210,14 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			$ExitAnchor += $subtable_offset;
 			list($x,$y) = $this->_getAnchorTable($ExitAnchor);
 			if ($dir == 'LTR') {
-				if (round($pdfWidth) == round($x * 1000/ $this->mpdf->CurrentFont['desc']['unitsPerEm']) ) {
+				if (round($pdfWidth) == round($x * 1000/ $this->mpdf->CurrentFont['unitsPerEm']) ) {
 					$x = 0;
 				}
-				else { $x = $x - ($pdfWidth * $this->mpdf->CurrentFont['desc']['unitsPerEm']/1000); }
+				else { $x = $x - ($pdfWidth * $this->mpdf->CurrentFont['unitsPerEm']/1000); }
 			}
 			$this->Exit[$ptr] = array('X'=>$x, 'Y'=>$y, 'dir'=>$dir);
 		}
+		if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 		return 1;
 	}
 
@@ -3016,23 +3282,24 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			$BaseRecord = array('AnchorX'=>$x, 'AnchorY'=>$y);	// e.g. Array ( [AnchorX] => 660 [AnchorY] => 1556 ) 
 
 			// Need default XAdvance for Base glyph
-			$BaseWidth = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['desc']['unitsPerEm'] / 1000;	// convert back to font design units
+			$BaseWidth = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000;	// convert back to font design units
 			$this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $BaseWidth;
 			// And any intervening (ignored) characters
 			if (($ptr - $matchedpos) > 1) {
 				for ($i=$matchedpos+1; $i<$ptr; $i++) {
-					$BaseWidthExtra = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$i]['uni']) * $this->mpdf->CurrentFont['desc']['unitsPerEm'] / 1000;	// convert back to font design units
+					$BaseWidthExtra = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$i]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000;	// convert back to font design units
 					$this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] += $BaseWidthExtra;
 
 				}
 			}
 
 			// Align to previous Glyph by attachment - so need to add to previous placement values
-			$prevXPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'];
-			$prevYPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'];
+			$prevXPlacement = (isset($this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement']) ? $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'] : 0);
+			$prevYPlacement = (isset($this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement']) ? $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'] : 0);
 
 			$this->OTLdata[$ptr]['GPOSinfo']['XPlacement'] = $prevXPlacement + $BaseRecord['AnchorX'] - $MarkRecord['AnchorX'];
 			$this->OTLdata[$ptr]['GPOSinfo']['YPlacement'] = $prevYPlacement + $BaseRecord['AnchorY'] - $MarkRecord['AnchorY'];
+			if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 			return 1;
 
 		}
@@ -3107,23 +3374,26 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 					$LigatureRecord = array('AnchorX'=>$x, 'AnchorY'=>$y);
 
 					// Need default XAdvance for Ligature glyph
-					$LigatureWidth = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['desc']['unitsPerEm'] / 1000;	// convert back to font design units
+					$LigatureWidth = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000;	// convert back to font design units
 					$this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $LigatureWidth;
 					// And any intervening (ignored)characters
 					if (($ptr - $matchedpos) > 1) {
 						for ($i=$matchedpos+1; $i<$ptr; $i++) {
-							$LigatureWidthExtra = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$i]['uni']) * $this->mpdf->CurrentFont['desc']['unitsPerEm'] / 1000;	// convert back to font design units
+							$LigatureWidthExtra = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$i]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000;	// convert back to font design units
 							$this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] += $LigatureWidthExtra;
 
 						}
 					}
 
 					// Align to previous Ligature by attachment - so need to add to previous placement values
-					$prevXPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'];
-					$prevYPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'];
+					if (isset($this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'])) $prevXPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'];
+					else { $prevXPlacement = 0; }
+					if (isset($this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'])) { $prevYPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement']; }
+					else { $prevYPlacement = 0; }
 
 					$this->OTLdata[$ptr]['GPOSinfo']['XPlacement'] = $prevXPlacement + $LigatureRecord['AnchorX'] - $MarkRecord['AnchorX'];
 					$this->OTLdata[$ptr]['GPOSinfo']['YPlacement'] = $prevYPlacement + $LigatureRecord['AnchorY'] - $MarkRecord['AnchorY'];
+					if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 					return 1;
 
 			}
@@ -3177,7 +3447,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			$Mark2Record = array('AnchorX'=>$x, 'AnchorY'=>$y);	// e.g. Array ( [AnchorX] => 660 [AnchorY] => 1556 ) 
 
 			// Need default XAdvance for Mark2 glyph
-			$Mark2Width = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['desc']['unitsPerEm'] / 1000;	// convert back to font design units
+			$Mark2Width = $this->mpdf->_getCharWidth($this->mpdf->CurrentFont['cw'], $this->OTLdata[$matchedpos]['uni']) * $this->mpdf->CurrentFont['unitsPerEm'] / 1000;	// convert back to font design units
 
 
 			// IF combining marks are set on different components of a ligature glyph, do not apply this rule
@@ -3198,7 +3468,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 			// However IF Mark2 (first in logical order, i.e. being attached to) is not associated with a base, carry on
 			// This happens in Indic when the Mark being attached to e.g. [Halant Ma lig] -> MatraU,  [U+0B4D + U+B2E as E0F5]-> U+0B41 become E135
-			if (OMIT_OTL_FIX_1 != 1) { 
+			if (!defined("OMIT_OTL_FIX_1") || OMIT_OTL_FIX_1 != 1) { 
 			/* OTL_FIX_1 */
 				if (isset($this->assocMarks[$matchedpos]) && ($prevLig != $thisLig || $prevComp != $thisComp ))  { return 0; }
 			}
@@ -3208,19 +3478,20 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 			}
 
 
-			if (OMIT_OTL_FIX_2 != 1) {
+			if (!defined("OMIT_OTL_FIX_2") || OMIT_OTL_FIX_2 != 1) {
 			/* OTL_FIX_2 */ 
-				if (!$this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) { $this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $Mark2Width; }
+				if (!isset($this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) || !$this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) { $this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $Mark2Width; }
 			}
 
 			// ZZZ99Q - Test Case font-family: garuda &#xe19;&#xe49;&#xe33;
-			if ($this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) { $this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']; }
+			if (isset($this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) && $this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']) { $this->OTLdata[$ptr]['GPOSinfo']['BaseWidth'] = $this->OTLdata[$matchedpos]['GPOSinfo']['BaseWidth']; }
 
 			// Align to previous Mark by attachment - so need to add the previous placement values
-			$prevXPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'];
-			$prevYPlacement = $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'];
+			$prevXPlacement = (isset($this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement']) ? $this->OTLdata[$matchedpos]['GPOSinfo']['XPlacement'] : 0);
+			$prevYPlacement = (isset($this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement']) ? $this->OTLdata[$matchedpos]['GPOSinfo']['YPlacement'] : 0);
 			$this->OTLdata[$ptr]['GPOSinfo']['XPlacement'] = $prevXPlacement + $Mark2Record['AnchorX'] - $Mark1Record['AnchorX'];
 			$this->OTLdata[$ptr]['GPOSinfo']['YPlacement'] = $prevYPlacement + $Mark2Record['AnchorY'] - $Mark1Record['AnchorY'];
+			if ($this->debugOTL) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 			return 1;
 
 		}
@@ -3273,7 +3544,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						$InputGlyphCount = $this->read_ushort();
 						$PosCount = $this->read_ushort();
 
-
+						$Input = array();
 						for ($r=1;$r<$InputGlyphCount;$r++) {
 							$Input[$r] = $this->read_ushort();
 						}
@@ -3286,7 +3557,8 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 							//  NB starts at 1 
 							for ($gcl=1;$gcl<$InputGlyphCount;$gcl++) {
 								$classindex = $Input[$gcl];
-								$inputGlyphs[$gcl] = $InputClasses[$classindex];
+								if (isset($InputClasses[$classindex])) { $inputGlyphs[$gcl] = $InputClasses[$classindex]; }
+								else { $inputGlyphs[$gcl] = ''; }
 							}
 						}
 
@@ -3320,11 +3592,12 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 								foreach($this->GPOSLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
 									$shift = $this->_applyGPOSsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GPOS_offset + $this->GSUB_length), $luType, $luFlag, $luMarkFilteringSet, $this->LuCoverage[$lu][$luc], $tag, 1, $is_old_spec);
+									if ($this->debugOTL && $shift) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 									if ($shift) { break; }
 								}
 							}
 
-							if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+							if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
 							else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 
 						}
@@ -3394,14 +3667,17 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 					for($b=0;$b<$ChainPosClassRuleCnt;$b++) {		// EACH RULE
 						$this->seek($ChainPosClassRule[$b]);
 						$BacktrackGlyphCount = $this->read_ushort();
+						$Backtrack = array();
 						for ($r=0;$r<$BacktrackGlyphCount;$r++) {
 							$Backtrack[$r] = $this->read_ushort();
 						}
 						$InputGlyphCount = $this->read_ushort();
+						$Input = array();
 						for ($r=1;$r<$InputGlyphCount;$r++) {
 							$Input[$r] = $this->read_ushort();
 						}
 						$LookaheadGlyphCount = $this->read_ushort();
+						$Lookahead = array();
 						for ($r=0;$r<$LookaheadGlyphCount;$r++) {
 							$Lookahead[$r] = $this->read_ushort();
 						}
@@ -3415,20 +3691,23 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 							//  NB starts at 1 
 							for ($gcl=1;$gcl<$InputGlyphCount;$gcl++) {
 								$classindex = $Input[$gcl];
-								$inputGlyphs[$gcl] = $InputClasses[$classindex];
+								if (isset($InputClasses[$classindex])) { $inputGlyphs[$gcl] = $InputClasses[$classindex]; }
+								else { $inputGlyphs[$gcl] = ''; }
 							}
 						}
 
 						// Class 0 contains all the glyphs NOT in the other classes
 						$class0excl = array();
 						for ($gc=1;$gc<=count($InputClasses);$gc++) {
-							if (is_array($InputClasses[$gc])) $class0excl = $class0excl + $InputClasses[$gc];
+							if (isset($InputClasses[$gc]) && is_array($InputClasses[$gc])) $class0excl = $class0excl + $InputClasses[$gc];
 						}
 
 						if ($BacktrackGlyphCount) {
+							$backtrackGlyphs = array();
 							for ($gcl=0;$gcl<$BacktrackGlyphCount;$gcl++) {
 								$classindex = $Backtrack[$gcl];
-								$backtrackGlyphs[$gcl] = $BacktrackClasses[$classindex];
+								if (isset($BacktrackClasses[$classindex])) { $backtrackGlyphs[$gcl] = $BacktrackClasses[$classindex]; }
+								else { $backtrackGlyphs[$gcl] = ''; }
 							}
 						}
 						else { $backtrackGlyphs = array(); }
@@ -3436,13 +3715,15 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						// Class 0 contains all the glyphs NOT in the other classes
 						$bclass0excl = array();
 						for ($gc=1;$gc<=count($BacktrackClasses);$gc++) {
-							if (is_array($BacktrackClasses[$gc])) $bclass0excl = $bclass0excl + $BacktrackClasses[$gc];
+							if (isset($BacktrackClasses[$gc]) && is_array($BacktrackClasses[$gc])) $bclass0excl = $bclass0excl + $BacktrackClasses[$gc];
 						}
 
 						if ($LookaheadGlyphCount) {
+							$lookaheadGlyphs = array();
 							for ($gcl=0;$gcl<$LookaheadGlyphCount;$gcl++) {
 								$classindex = $Lookahead[$gcl];
-								$lookaheadGlyphs[$gcl] = $LookaheadClasses[$classindex];
+								if (isset($LookaheadClasses[$classindex])) { $lookaheadGlyphs[$gcl] = $LookaheadClasses[$classindex]; }
+								else { $lookaheadGlyphs[$gcl] = ''; }
 							}
 						}
 						else { $lookaheadGlyphs = array(); }
@@ -3450,12 +3731,14 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 						// Class 0 contains all the glyphs NOT in the other classes
 						$lclass0excl = array();
 						for ($gc=1;$gc<=count($LookaheadClasses);$gc++) {
-							if (is_array($LookaheadClasses[$gc])) $lclass0excl = $lclass0excl + $LookaheadClasses[$gc];
+							if (isset($LookaheadClasses[$gc]) && is_array($LookaheadClasses[$gc])) $lclass0excl = $lclass0excl + $LookaheadClasses[$gc];
 						}
 
 						$matched = $this->checkContextMatchMultipleUni($inputGlyphs, $backtrackGlyphs, $lookaheadGlyphs, $ignore, $ptr, $class0excl, $bclass0excl, $lclass0excl );
 						if ($matched) {
 							$PosCount = $this->read_ushort();
+							$SequenceIndex = array();
+							$LookupListIndex = array();
 							for ($p=0;$p<$PosCount;$p++) {	// EACH LOOKUP
 								$SequenceIndex[$p] = $this->read_ushort();
 								$LookupListIndex[$p] = $this->read_ushort();
@@ -3475,11 +3758,12 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 								foreach($this->GPOSLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
 									$shift = $this->_applyGPOSsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GPOS_offset + $this->GSUB_length), $luType, $luFlag, $luMarkFilteringSet, $this->LuCoverage[$lu][$luc], $tag, 1, $is_old_spec);
+									if ($this->debugOTL && $shift) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 									if ($shift) { break; }
 								}
 							}
 
-							if (OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
+							if (!defined("OMIT_OTL_FIX_3") || OMIT_OTL_FIX_3 != 1) { return $shift ; }	/* OTL_FIX_3 */
 							else return $InputGlyphCount ;	// should be + matched ignores in Input Sequence
 
 						}
@@ -3542,7 +3826,8 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 					$lu = $PosLookupRecord[$p]['LookupListIndex'];
 					$luType = $this->GPOSLookups[$lu]['Type'];
 					$luFlag = $this->GPOSLookups[$lu]['Flag'];
-					$luMarkFilteringSet = $this->GPOSLookups[$lu]['MarkFilteringSet'];
+					if (isset($this->GPOSLookups[$lu]['MarkFilteringSet'])) { $luMarkFilteringSet = $this->GPOSLookups[$lu]['MarkFilteringSet']; }
+					else { $luMarkFilteringSet = ''; }
 
 					$luptr = $matched[$PosLookupRecord[$p]['SequenceIndex']];
 					$lucurrGlyph = $this->OTLdata[$luptr]['hex'];
@@ -3550,6 +3835,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 					foreach($this->GPOSLookups[$lu]['Subtables'] AS $luc=>$lusubtable_offset) {
 						$shift = $this->_applyGPOSsubtable($lu, $luc, $luptr, $lucurrGlyph, $lucurrGID, ($lusubtable_offset - $this->GPOS_offset + $this->GSUB_length), $luType, $luFlag, $luMarkFilteringSet, $this->LuCoverage[$lu][$luc], $tag, 1, $is_old_spec);
+						if ($this->debugOTL && $shift) { $this->_dumpproc('GPOS', $lookupID, $subtable, $Type, $PosFormat, $ptr, $currGlyph, $level); }
 						if ($shift) { break; }
 					}
 				}
@@ -3574,7 +3860,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		// Input starts with (1=>xxx)
 		// return false if no match, else an array of ptr for matches (0=>0, 1=>3,...)
 
-		$current_syllable = $this->OTLdata[$ptr]['syllable'];
+		$current_syllable = (isset($this->OTLdata[$ptr]['syllable']) ? $this->OTLdata[$ptr]['syllable'] : 0);
 
 		// BACKTRACK
 		$checkpos = $ptr;
@@ -3630,7 +3916,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		// $class0excl is the string of glyphs in all classes except Class 0 (GSUB 5.2, 6.2, GPOS 7.2, 8.2)
 		// $bclass0excl & $lclass0excl are the same for lookahead and backtrack (GSUB 6.2, GPOS 8.2)
 
-		$current_syllable = $this->OTLdata[$ptr]['syllable'];
+		$current_syllable = (isset($this->OTLdata[$ptr]['syllable']) ? $this->OTLdata[$ptr]['syllable'] : 0);
 
 		// BACKTRACK
 		$checkpos = $ptr;
@@ -3696,7 +3982,7 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		// $class0excl is array of glyphs in all classes except Class 0 (GSUB 5.2, 6.2, GPOS 7.2, 8.2)
 		// $bclass0excl & $lclass0excl are the same for lookahead and backtrack (GSUB 6.2, GPOS 8.2)
 
-		$current_syllable = $this->OTLdata[$ptr]['syllable'];
+		$current_syllable = (isset($this->OTLdata[$ptr]['syllable']) ? $this->OTLdata[$ptr]['syllable'] : 0);
 
 		// BACKTRACK
 		$checkpos = $ptr;
@@ -3758,14 +4044,6 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 
 
-
-	// If XAdvance is aplied to $ptr - in order for PDF to position the Advance correctly need to place it on
-	// the last of any Marks which immediately follow the current glyph
-	function _getXAdvancePos($pos) {
-		// NB Not all fonts have all marks specified in GlyphClassMarks
-		while(strpos($this->GlyphClassMarks, $this->OTLdata[$pos+1]['hex'])!==false) { $pos++; }
-		return $pos ;
-	}
 
 	function _getClassDefinitionTable($offset) {
 		if (isset($this->LuDataCache[$this->fontkey][$offset])) {
@@ -3863,6 +4141,8 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 		// Flag & 0xFF?? = MarkAttachmentType
 		if ($flag & 0xFF00) {
+			// "a lookup must ignore any mark glyphs that are not in the specified mark attachment class"
+			// $this->MarkAttachmentType is already adjusted for this i.e. contains all Marks except those in the MarkAttachmentClassDef table
 			$MarkAttachmentType = $flag >> 8;
 			$ignoreflag = $flag; 
 			$str = $this->MarkAttachmentType[$MarkAttachmentType]; 
@@ -3871,12 +4151,14 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 		// Flag & 0x0010 = UseMarkFilteringSet
 		if ($flag & 0x0010) {
 			die("This font [".$this->fontkey."] contains MarkGlyphSets - Not tested yet"); 
+			// Change also in ttfontsuni.php
+			if ($MarkFilteringSet=='') die("This font [".$this->fontkey."] contains MarkGlyphSets - but MarkFilteringSet not set"); 
 			$str = $this->MarkGlyphSets[$MarkFilteringSet]; 
 		}
 
 		// If Ignore Marks set, supercedes any above
-		// Flag & 0x0008 = Ignore Marks
-		if (($flag & 0x0008) == 0x0008) { 
+		// Flag & 0x0008 = Ignore Marks - (unless already done with MarkAttachmentType)
+		if (($flag & 0x0008) == 0x0008 && ($flag & 0xFF00) == 0) { 
 			$ignoreflag = 8; 
 			$str = $this->GlyphClassMarks; 
 		}
@@ -3899,12 +4181,16 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 
 	function _checkGCOMignore($flag, $glyph, $MarkFilteringSet) {
 		$ignore = false;
-		// Flag & 0x0008 = Ignore Marks
-		if (($flag & 0x0008) && strpos($this->GlyphClassMarks,$glyph)) { $ignore = true; }
+		// Flag & 0x0008 = Ignore Marks - (unless already done with MarkAttachmentType)
+		if (($flag & 0x0008 && ($flag & 0xFF00) == 0) && strpos($this->GlyphClassMarks,$glyph)) { $ignore = true; }
 		if (($flag & 0x0004) && strpos($this->GlyphClassLigatures,$glyph)) { $ignore = true; }
 		if (($flag & 0x0002) && strpos($this->GlyphClassBases,$glyph)) { $ignore = true; }
 		// Flag & 0xFF?? = MarkAttachmentType
-		if (($flag & 0xFF00) && strpos($this->MarkAttachmentType[($flag >> 8)],$glyph)) { $ignore = true; }
+		if ($flag & 0xFF00) {
+			// "a lookup must ignore any mark glyphs that are not in the specified mark attachment class"
+			// $this->MarkAttachmentType is already adjusted for this i.e. contains all Marks except those in the MarkAttachmentClassDef table
+			if (strpos($this->MarkAttachmentType[($flag >> 8)],$glyph)) { $ignore = true; }
+		}
 		// Flag & 0x0010 = UseMarkFilteringSet
 		if (($flag & 0x0010) && strpos($this->MarkGlyphSets[$MarkFilteringSet],$glyph)) { $ignore = true; }
 		return $ignore;
@@ -3924,115 +4210,48 @@ function _applyGPOSsubtable($lookupID, $subtable, $ptr, $currGlyph, $currGID, $s
 /*
 Bidirectional Character Types
 =============================
-Category 	Type 	Description 	General Scope
+Type 	Description 	General Scope
 Strong 	
-0x4C [L] L 		Left-to-Right 		LRM, most alphabetic, syllabic, Han ideographs, non-European or non-Arabic digits, ...
-0x45 [E] LRE 	Left-to-Right Embedding LRE
-0x4F [O] LRO 	Left-to-Right Override 	LRO
-0x52 [R] R 		Right-to-Left 		RLM, Hebrew alphabet, and related punctuation
-0x41 [A] AL 	Right-to-Left Arabic 	Arabic, Thaana, and Syriac alphabets, most punctuation specific to those scripts, ...
-0x47 [G] RLE 	Right-to-Left Embedding RLE
-0x56 [V] RLO 	Right-to-Left Override 	RLO
+L 	Left-to-Right 		LRM, most alphabetic, syllabic, Han ideographs, non-European or non-Arabic digits, ...
+LRE 	Left-to-Right Embedding LRE
+LRO 	Left-to-Right Override 	LRO
+R 	Right-to-Left 		RLM, Hebrew alphabet, and related punctuation
+AL 	Right-to-Left Arabic 	Arabic, Thaana, and Syriac alphabets, most punctuation specific to those scripts, ...
+RLE 	Right-to-Left Embedding RLE
+RLO 	Right-to-Left Override 	RLO
 Weak 	
-0x70 [p] PDF 	Pop Directional Format 		PDF
-0x6E [n] EN 	European Number 			European digits, Eastern Arabic-Indic digits, ...
-0x73 [s] ES 	European Number Separator 	Plus sign, minus sign
-0x74 [t] ET 	European Number Terminator 	Degree sign, currency symbols, ...
-0x61 [a] AN 	Arabic Number 			Arabic-Indic digits, Arabic decimal and thousands separators, ...
-0x63 [c] CS 	Common Number Separator 	Colon, comma, full stop (period), No-break space, ...
-0x6D [m] NSM 	Nonspacing Mark 			Characters marked Mn (Nonspacing_Mark) and Me (Enclosing_Mark) in the Unicode Character Database
-0x62 [b] BN 	Boundary Neutral 			Default ignorables, non-characters, and control characters, other than those explicitly given other types.
+PDF 	Pop Directional Format 		PDF
+EN 	European Number 			European digits, Eastern Arabic-Indic digits, ...
+ES 	European Number Separator 	Plus sign, minus sign
+ET 	European Number Terminator 	Degree sign, currency symbols, ...
+AN 	Arabic Number 			Arabic-Indic digits, Arabic decimal and thousands separators, ...
+CS 	Common Number Separator 	Colon, comma, full stop (period), No-break space, ...
+NSM 	Nonspacing Mark 			Characters marked Mn (Nonspacing_Mark) and Me (Enclosing_Mark) in the Unicode Character Database
+BN 	Boundary Neutral 			Default ignorables, non-characters, and control characters, other than those explicitly given other types.
 Neutral 	
-0x26 [&] B 		Paragraph Separator 	Paragraph separator, appropriate Newline Functions, higher-level protocol paragraph determination
-0x25 [%] S 		Segment Separator 	Tab
-0x24 [$] WS 	Whitespace 			Space, figure space, line separator, form feed, General Punctuation spaces, ...
-0x23 [#] ON 	Other Neutrals 		All other characters, including OBJECT REPLACEMENT CHARACTER
+B 	Paragraph Separator 	Paragraph separator, appropriate Newline Functions, higher-level protocol paragraph determination
+S 	Segment Separator 	Tab
+WS 	Whitespace 			Space, figure space, line separator, form feed, General Punctuation spaces, ...
+ON 	Other Neutrals 		All other characters, including OBJECT REPLACEMENT CHARACTER
 */
 
-function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='', $nextBidiText='') {
-	$bidi_code = array(
-	'L' => 'L',		/*	Left-to-Right 			LRM, most alphabetic, syllabic, Han ideographs, non-European or non-Arabic digits, */
-	'E' => 'LRE',	/*	Left-to-Right Embedding 	LRE */
-	'O' => 'LRO',	/*	Left-to-Right Override 		LRO */
-	'R' => 'R',		/*	Right-to-Left 			RLM, Hebrew alphabet, and related punctuation */
-	'A' => 'AL',	/*	Right-to-Left Arabic 		Arabic, Thaana, and Syriac alphabets, most punctuation specific to those scripts,  */
-	'G' => 'RLE',	/*	Right-to-Left Embedding 	RLE */
-	'V' => 'RLO',	/*	Right-to-Left Override 		RLO */
-	'p' => 'PDF',	/*	Pop Directional Format 		PDF */
-	'n' => 'EN',	/*	European Number 			European digits, Eastern Arabic-Indic digits,  */
-	's' => 'ES',	/*	European Number Separator 	Plus sign, minus sign */
-	't' => 'ET',	/*	European Number Terminator 	Degree sign, currency symbols,  */
-	'a' => 'AN',	/*	Arabic Number 			Arabic-Indic digits, Arabic decimal and thousands separators,  */
-	'c' => 'CS',	/*	Common Number Separator 	Colon, comma, full stop (period), No-break space,  */
-	'm' => 'NSM',	/*	Nonspacing Mark 			Mn (Nonspacing_Mark) and Me (Enclosing_Mark) in the Unicode Character Database */
-	'b' => 'BN',	/*	Boundary Neutral 			Default ignorables, non-characters, and control characters */
-	'&' => 'B',		/*	Paragraph Separator 	Paragraph separator, appropriate Newline Functions, higher-level paragraph determination */
-	'%' => 'S',		/*	Segment Separator 	Tab */
-	'$' => 'WS',	/*	Whitespace 			Space, figure space, line separator, form feed, General Punctuation spaces,  */
-	'#' => 'ON',	/*	Other Neutrals 		All other characters, including OBJECT REPLACEMENT CHARACTER */
-	);
+function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS) {
 
 	$pel = 0;	// paragraph embedding level
 	$maxlevel = 0;
-	$numchars = count($ta);
-
-	// CHECK WHETHER STRING CONTAINS ALL RTL OR SOME RTL
-
-	// Find the first strong type character of nextBidiText - type L, AL, or R.
-	$nextBidiStrongType = '';
-	if ($nextBidiText) {
-		$L = strpos(' '.$nextBidiText.'L', 'L');
-		$R = strpos(' '.$nextBidiText.'R', 'R');
-		$AL = strpos(' '.$nextBidiText.'A', 'A');
-		$MR = min($R,$AL);
-		if ($L<$MR) { $nextBidiStrongType = 'L'; }
-		else if ($MR<$L) {
-			if ($R<$AL) { $nextBidiStrongType = 'R'; }
-			else { $nextBidiStrongType = 'AL'; }
-		}
-	}
-
-	// Find the last strong type character of lastBidiText - type L, AL, or R.
-	$lastBidiStrongType = '';
-	if ($lastBidiText) {
-		$L = strrpos(' '.$lastBidiText, 'L');
-		$R = strrpos(' '.$lastBidiText, 'R');
-		$AL = strrpos(' '.$lastBidiText, 'A');
-		$MR = max($R,$AL);
-		if ($L>$MR) { $lastBidiStrongType = 'L'; }
-		else if ($MR>$L) { 
-			if ($R>$AL) { $lastBidiStrongType = 'R'; }
-			else { $lastBidiStrongType = 'AL'; }
-		}
-	}
+	$numchars = count($chunkOTLdata['char_data']);
 
 	// Set the initial paragraph embedding level
 	if ($dir == 'rtl') { $pel = 1; } 
+	else { $pel = 0; }
 
-	else { $pel = 0; } 	// ???? Always ltr if not rtl
-/*
-	else if ($dir == 'ltr') { $pel = 0; }
-	else {
-		// P2. In each paragraph, find the first character of type L, AL, or R.
-		// P3. If a character is found in P2 and it is of type AL or R, then set the paragraph embedding level to one; otherwise, set it to zero.
-		$L = strpos(' '.$chunkOTLdata['bidi_type'].'L', 'L');
-		$R = strpos(' '.$chunkOTLdata['bidi_type'].'R', 'R');
-		$AL = strpos(' '.$chunkOTLdata['bidi_type'].'A', 'A');
-		$R = min($R,$AL);
-		if ($R<$L) { $pel = 1; }
-		else { $pel = 0; }
-	}
-*/
 
 	// X1. Begin by setting the current embedding level to the paragraph embedding level. Set the directional override status to neutral. 
 	// Current Embedding Level
 	$cel = $pel;
-	// directional override status
-	$dos = 'N';
+	// directional override status (-1 is Neutral)
+	$dos = -1;
 	$remember = array();
-	// start-of-level-run
-	$sor = $pel % 2 ? 'R' : 'L';
-	$eor = $sor;
 
 	// Array of characters data
 	$chardata = Array();
@@ -4040,7 +4259,7 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 	// Process each character iteratively, applying rules X2 through X9. Only embedding levels from 0 to 61 are valid in this phase.
 	// In the resolution of levels in rules I1 and I2, the maximum embedding level of 62 can be reached.
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($ta[$i] == 8235) {	// RLE
+		if ($chunkOTLdata['char_data'][$i]['uni'] == 8235) {	// RLE
 			// X2. With each RLE, compute the least greater odd embedding level.
 			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to neutral.
 			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
@@ -4048,12 +4267,10 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 			if ($next_level < 62) {
 				$remember[] = array('num' => 8235, 'cel' => $cel, 'dos' => $dos);
 				$cel = $next_level;
-				$dos = 'N';
-				$sor = $eor;
-				$eor = $cel % 2 ? 'R' : 'L';
+				$dos = -1;
 			}
 		}
-		else if ($ta[$i] == 8234) {	// LRE
+		else if ($chunkOTLdata['char_data'][$i]['uni'] == 8234) {	// LRE
 			// X3. With each LRE, compute the least greater even embedding level.
 			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to neutral.
 			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
@@ -4061,12 +4278,10 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 			if ( $next_level < 62 ) {
 				$remember[] = array('num' => 8234, 'cel' => $cel, 'dos' => $dos);
 				$cel = $next_level;
-				$dos = 'N';
-				$sor = $eor;
-				$eor = $cel % 2 ? 'R' : 'L';
+				$dos = -1;
 			}
 		}
-		else if ($ta[$i] == 8238) { // RLO
+		else if ($chunkOTLdata['char_data'][$i]['uni'] == 8238) { // RLO
 			// X4. With each RLO, compute the least greater odd embedding level.
 			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to right-to-left.
 			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
@@ -4074,12 +4289,10 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 			if ($next_level < 62) {
 				$remember[] = array('num' => 8238, 'cel' => $cel, 'dos' => $dos);
 				$cel = $next_level;
-				$dos = 'R';
-				$sor = $eor;
-				$eor = $cel % 2 ? 'R' : 'L';
+				$dos = UCDN::BIDI_CLASS_R;
 			}
 		}
-		else if ($ta[$i] == 8237) {	// LRO
+		else if ($chunkOTLdata['char_data'][$i]['uni'] == 8237) {	// LRO
 			// X5. With each LRO, compute the least greater even embedding level.
 			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to left-to-right.
 			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
@@ -4087,12 +4300,10 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 			if ( $next_level < 62 ) {
 				$remember[] = array('num' => 8237, 'cel' => $cel, 'dos' => $dos);
 				$cel = $next_level;
-				$dos = 'L';
-				$sor = $eor;
-				$eor = $cel % 2 ? 'R' : 'L';
+				$dos = UCDN::BIDI_CLASS_L;
 			}
 		}
-		else if ($ta[$i] == 8236) {	// PDF
+		else if ($chunkOTLdata['char_data'][$i]['uni'] == 8236) {	// PDF
 			// X7. With each PDF, determine the matching embedding or override code. If there was a valid matching code, restore (pop) the last remembered (pushed) embedding level and directional override.
 			if (count($remember)) {
 				$last = count($remember ) - 1;
@@ -4101,40 +4312,64 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 					$match = array_pop($remember);
 					$cel = $match['cel'];
 					$dos = $match['dos'];
-					$sor = $eor;
-					$eor = ($cel > $match['cel'] ? $cel : $match['cel']) % 2 ? 'R' : 'L';
 				}
 			}
+		}
+		else if ($chunkOTLdata['char_data'][$i]['uni'] == 10) {	// NEW LINE
+			// Reset to start values
+			$cel = $pel;
+			$dos = -1;
+			$remember = array();
 		}
 		else {
 			// X6. For all types besides RLE, LRE, RLO, LRO, and PDF:
 			//	a. Set the level of the current character to the current embedding level.
 			//	b. When the directional override status is not neutral, reset the current character type to directional override status.
-			if ($dos != 'N') { $chardir = $dos; } 
+			if ($dos != -1) { $chardir = $dos; } 
 			else {
-				$chardir = $bidi_code[$chunkOTLdata['bidi_type']{$i}];
+				$chardir = $chunkOTLdata['char_data'][$i]['bidi_class'];
 			}
 			// stores string characters and other information
 			if (isset($chunkOTLdata['GPOSinfo'][$i])) { $gpos = $chunkOTLdata['GPOSinfo'][$i]; }
 			else $gpos = '';
-			$chardata[] = array('char' => $ta[$i], 'level' => $cel, 'type' => $chardir, 'sor' => $sor, 'eor' => $eor, 'group' => $chunkOTLdata['group']{$i}, 'GPOSinfo' => $gpos);
+			$chardata[] = array('char' => $chunkOTLdata['char_data'][$i]['uni'], 'level' => $cel, 'type' => $chardir, 'group' => $chunkOTLdata['group']{$i}, 'GPOSinfo' => $gpos);
 		}
 	}
 
-	// X8. All explicit directional embeddings and overrides are completely terminated at the end of each paragraph. Paragraph separators are not included in the embedding.
-	// X9. Remove all RLE, LRE, RLO, LRO, PDF, and BN codes.
+	$numchars = count($chardata);
+
+	// X8. All explicit directional embeddings and overrides are completely terminated at the end of each paragraph.
+	// Paragraph separators are not included in the embedding.
+	// X9. Remove all RLE, LRE, RLO, LRO, and PDF codes.
 	// This is effectively done by only saving other codes to chardata
 
-	// X10. The remaining rules are applied to each run of characters at the same level. For each run, determine the start-of-level-run (sor) and end-of-level-run (eor) type, either L or R. This depends on the higher of the two levels on either side of the boundary (at the start or end of the paragraph, the level of the 'other' run is the base embedding level). If the higher level is odd, the type is R; otherwise, it is L.
+	// X10. Determine the start-of-sequence (sor) and end-of-sequence (eor) types, either L or R, for each isolating run sequence. These depend on the higher of the two levels on either side of the sequence boundary:
+	// For sor, compare the level of the first character in the sequence with the level of the character preceding it in the paragraph or if there is none, with the paragraph embedding level.
+	// For eor, compare the level of the last character in the sequence with the level of the character following it in the paragraph or if there is none, with the paragraph embedding level.
+	// If the higher level is odd, the sor or eor is R; otherwise, it is L.
+
+	$prelevel = $pel;
+	$postlevel = $pel;
+	$cel = $prelevel;	// current embedding level
+	for ($i=0; $i < $numchars; ++$i) {
+		$level = $chardata[$i]['level'];
+		if ($i==0) { $left = $prelevel; }
+		else { $left = $chardata[$i-1]['level']; }
+		if ($i==($numchars-1)) { $right = $postlevel; }
+		else { $right = $chardata[$i+1]['level']; }
+		$chardata[$i]['sor'] = max($left, $level) % 2 ? UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+		$chardata[$i]['eor'] = max($right, $level) % 2 ? UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+	}
+
+
 
 	// 3.3.3 Resolving Weak Types
 	// Weak types are now resolved one level run at a time. At level run boundaries where the type of the character on the other side of the boundary is required, the type assigned to sor or eor is used.
 	// Nonspacing marks are now resolved based on the previous characters.
-	$numchars = count($chardata);
 
 	// W1. Examine each nonspacing mark (NSM) in the level run, and change the type of the NSM to the type of the previous character. If the NSM is at the start of the level run, it will get the type of sor.
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'NSM') {
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_NSM) {
 			if ($i==0 || $chardata[$i]['level']!=$chardata[$i-1]['level']) {
 				$chardata[$i]['type'] = $chardata[$i]['sor'];
 			}
@@ -4148,13 +4383,12 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 	$prevlevel = -1;
 	$levcount = 0;
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'EN') {
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN) {
 			$found = false;
 			for ($j=$levcount; $j >= 0; $j--) {
-				if ($chardata[$j]['type'] == 'AL') { $chardata[$i]['type'] = 'AN'; $found = true; break; }
-				else if (($chardata[$j]['type'] == 'L') || ($chardata[$j]['type'] == 'R')) { $found = true; break; }
+				if ($chardata[$j]['type'] == UCDN::BIDI_CLASS_AL) { $chardata[$i]['type'] = UCDN::BIDI_CLASS_AN; $found = true; break; }
+				else if (($chardata[$j]['type'] == UCDN::BIDI_CLASS_L) || ($chardata[$j]['type'] == UCDN::BIDI_CLASS_R)) { $found = true; break; }
 			}
-			if (!$found && $lastBidiStrongType == 'AL') { $chardata[$i]['type'] = 'AN'; } 
 		}
 		if ($chardata[$i]['level'] != $prevlevel) { $levcount = 0; } 
 		else { ++$levcount; }
@@ -4163,139 +4397,127 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 
 	// W3. Change all ALs to R.
 	for ($i=0; $i < $numchars; ++$i) {
- 		if ($chardata[$i]['type'] == 'AL') { $chardata[$i]['type'] = 'R'; }
+ 		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_AL) { $chardata[$i]['type'] = UCDN::BIDI_CLASS_R; }
 	}
 
 	// W4. A single European separator between two European numbers changes to a European number. A single common separator between two numbers of the same type changes to that type.
-	$prevlevel = -1;
-	$levcount = 0;
-	for ($i=0; $i < $numchars; ++$i) {
-		if (($levcount > 0) AND (($i+1) < $numchars) AND ($chardata[($i+1)]['level'] == $prevlevel)) {
-			if (($chardata[$i]['type'] == 'ES') && ($chardata[($i-1)]['type'] == 'EN') && ($chardata[($i+1)]['type'] == 'EN')) {
-				$chardata[$i]['type'] = 'EN';
+	for ($i=1; $i < $numchars; ++$i) {
+		if ( ($i+1) < $numchars && $chardata[($i)]['level'] == $chardata[($i+1)]['level'] && $chardata[($i)]['level'] == $chardata[($i-1)]['level']) {
+			if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ES && $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_EN && $chardata[($i+1)]['type'] == UCDN::BIDI_CLASS_EN) {
+				$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
 			}
-			else if (($chardata[$i]['type'] == 'CS') && ($chardata[($i-1)]['type'] == 'EN') && ($chardata[($i+1)]['type'] == 'EN')) {
-				$chardata[$i]['type'] = 'EN';
+			else if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS && $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_EN && $chardata[($i+1)]['type'] == UCDN::BIDI_CLASS_EN) {
+				$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
 			}
-			else if (($chardata[$i]['type'] == 'CS') && ($chardata[($i-1)]['type'] == 'AN') && ($chardata[($i+1)]['type'] == 'AN')) {
-				$chardata[$i]['type'] = 'AN';
+			else if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS && $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_AN && $chardata[($i+1)]['type'] == UCDN::BIDI_CLASS_AN) {
+				$chardata[$i]['type'] = UCDN::BIDI_CLASS_AN;
 			}
 		}
-		if ($chardata[$i]['level'] != $prevlevel) { $levcount = 0; }
-		else { ++$levcount; }
-		$prevlevel = $chardata[$i]['level'];
 	}
 
 	// W5. A sequence of European terminators adjacent to European numbers changes to all European numbers.
-	$prevlevel = -1;
-	$levcount = 0;
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'ET') {
-			if (($levcount > 0) && ($chardata[($i-1)]['type'] == 'EN')) {
-				$chardata[$i]['type'] = 'EN';
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ET) {
+			if ($i > 0 && $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_EN && $chardata[($i)]['level'] == $chardata[($i-1)]['level']) {
+				$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
 			}
 			else {
 				$j = $i+1;
-				while (($j < $numchars) && ($chardata[$j]['level'] == $prevlevel)) {
-					if ($chardata[$j]['type'] == 'EN') {
-						$chardata[$i]['type'] = 'EN';
+				while ($j < $numchars && $chardata[$j]['level'] == $chardata[$i]['level'] ) {
+					if ($chardata[$j]['type'] == UCDN::BIDI_CLASS_EN) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
 						break;
 					}
-					else if ($chardata[$j]['type'] != 'ET') { break; }
+					else if ($chardata[$j]['type'] != UCDN::BIDI_CLASS_ET) { break; }
 					++$j;
 				}
 			}
 		}
-		if ($chardata[$i]['level'] != $prevlevel) { $levcount = 0; }
-		else { ++$levcount; }
-		$prevlevel = $chardata[$i]['level'];
 	}
 
 	// W6. Otherwise, separators and terminators change to Other Neutral.
 	for ($i=0; $i < $numchars; ++$i) {
-		if (($chardata[$i]['type'] == 'ET') || ($chardata[$i]['type'] == 'ES') || ($chardata[$i]['type'] == 'CS')) {
-			$chardata[$i]['type'] = 'ON';
+		if (($chardata[$i]['type'] == UCDN::BIDI_CLASS_ET) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ES) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS)) {
+			$chardata[$i]['type'] = UCDN::BIDI_CLASS_ON;
 		}
 	}
 
 	//W7. Search backward from each instance of a European number until the first strong type (R, L, or sor) is found. If an L is found, then change the type of the European number to L.
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'EN') {
-			for ($j=$i-1; $j >= 0; $j--) {
-				if ($chardata[$j]['level'] != $chardata[$i]['level']) {	// Level run boundary 
-					break;
-				}
-				else if ($chardata[$j]['type'] == 'L') {
-					$chardata[$i]['type'] = 'L';
-					break;
-				}
-				else if ($chardata[$j]['type'] == 'R') {
-					break;
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN) {
+			if ($i==0) {	// Start of Level run
+				if ($chardata[$i]['sor']==UCDN::BIDI_CLASS_L) $chardata[$i]['type'] = $chardata[$i]['sor'];
+			}
+			else {
+				for ($j=$i-1; $j >= 0; $j--) {
+					if ($chardata[$j]['level'] != $chardata[$i]['level']) {	// Level run boundary 
+						if ($chardata[$j+1]['sor']==UCDN::BIDI_CLASS_L) $chardata[$i]['type'] = $chardata[$j+1]['sor'];
+						break;
+					}
+					else if ($chardata[$j]['type'] == UCDN::BIDI_CLASS_L) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_L;
+						break;
+					}
+					else if ($chardata[$j]['type'] == UCDN::BIDI_CLASS_R) {
+						break;
+					}
 				}
 			}
 		}
 	}
 
-
 	// N1. A sequence of neutrals takes the direction of the surrounding strong text if the text on both sides has the same direction. European and Arabic numbers act as if they were R in terms of their influence on neutrals. Start-of-level-run (sor) and end-of-level-run (eor) are used at level run boundaries.
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'ON' || $chardata[$i]['type'] == 'WS') {
-			$left = '';
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ON || $chardata[$i]['type'] == UCDN::BIDI_CLASS_WS) {
+			$left = -1;
 			// LEFT
 			if ($i==0) { 	// first char 
-				if (isset($lastBidiStrongType) && $lastBidiStrongType) { 
-					if ($lastBidiStrongType == 'AL') { $left = 'R'; }
-					else { $left = $lastBidiStrongType; }
-				}
-				else { $left = $chardata[($i)]['sor']; }
+				$left = $chardata[($i)]['sor'];
 			}
 			else if ($chardata[($i-1)]['level'] != $chardata[($i)]['level']) { 	// run boundary
 				$left = $chardata[($i)]['sor'];
 			}
-			else if ($chardata[($i-1)]['type'] == 'L') {
-				$left = 'L';
+			else if ($chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_L) {
+				$left = UCDN::BIDI_CLASS_L;
 			}
-			else if ($chardata[($i-1)]['type'] == 'R' || $chardata[($i-1)]['type'] == 'EN' || $chardata[($i-1)]['type'] == 'AN') {
-				$left = 'R';
+			else if ($chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_R || $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_EN || $chardata[($i-1)]['type'] == UCDN::BIDI_CLASS_AN) {
+				$left = UCDN::BIDI_CLASS_R;
 			}
 			// RIGHT
-			$right = '';
+			$right = -1;
 			$j=$i;
 			// move to the right of any following neutrals OR hit a run boundary
-			while(($chardata[$j]['type'] == 'ON' || $chardata[$j]['type'] == 'WS') && $j<=($numchars-1)) { 
+			while(($chardata[$j]['type'] == UCDN::BIDI_CLASS_ON || $chardata[$j]['type'] == UCDN::BIDI_CLASS_WS) && $j<=($numchars-1)) { 
 				if ($j==($numchars-1)) { 	// last char
-					if (isset($nextBidiStrongType) && $nextBidiStrongType) {
-						if ($nextBidiStrongType == 'AL') { $right = 'R'; }
-						else { $right = $nextBidiStrongType; }
-					}
-					else { $right = $chardata[($j)]['eor']; }
+					$right = $chardata[($j)]['eor'];
 					break;
 				}
 				else if ($chardata[($j+1)]['level'] != $chardata[($j)]['level']) { 	// run boundary
 					$right = $chardata[($j)]['eor'];
 					break;
 				}
-				else if ($chardata[($j+1)]['type'] == 'L') {
-					$right = 'L';
+				else if ($chardata[($j+1)]['type'] == UCDN::BIDI_CLASS_L) {
+					$right = UCDN::BIDI_CLASS_L;
 					break;
 				}
-				else if ($chardata[($j+1)]['type'] == 'R' || $chardata[($j+1)]['type'] == 'EN' || $chardata[($j+1)]['type'] == 'AN') {
-					$right = 'R';
+				else if ($chardata[($j+1)]['type'] == UCDN::BIDI_CLASS_R || $chardata[($j+1)]['type'] == UCDN::BIDI_CLASS_EN || $chardata[($j+1)]['type'] == UCDN::BIDI_CLASS_AN) {
+					$right = UCDN::BIDI_CLASS_R;
 					break;
 				}
 				$j++; 
 			}
-			if ($left && $left==$right) {
+			if ($left > -1 && $left==$right) {
+				$chardata[$i]['orig_type'] = $chardata[$i]['type'];	// Need to store the original 'WS' for reference in L1 below
 				$chardata[$i]['type'] = $left;
 			}
 		}
 	}
 
-
 	// N2. Any remaining neutrals take the embedding direction
 	for ($i=0; $i < $numchars; ++$i) {
-		if ($chardata[$i]['type'] == 'ON' || $chardata[$i]['type'] == 'WS') {
-			$chardata[$i]['type'] = ($chardata[$i]['level'] % 2) ?  'R' : 'L';
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ON || $chardata[$i]['type'] == UCDN::BIDI_CLASS_WS) {
+			$chardata[$i]['type'] = ($chardata[$i]['level'] % 2) ?  UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+			$chardata[$i]['orig_type'] = $chardata[$i]['type'];	// Need to store the original 'WS' for reference in L1 below
 		}
 	}
 
@@ -4304,24 +4526,31 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 	for ($i=0; $i < $numchars; ++$i) {
 		$odd = $chardata[$i]['level'] % 2;
 		if ($odd) {
-			if (($chardata[$i]['type'] == 'L') || ($chardata[$i]['type'] == 'AN') || ($chardata[$i]['type'] == 'EN')) {
+			if (($chardata[$i]['type'] == UCDN::BIDI_CLASS_L) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_AN) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN)) {
 				$chardata[$i]['level'] += 1;
 			}
 		}
 		else {
-			if ($chardata[$i]['type'] == 'R') { $chardata[$i]['level'] += 1; }
-			else if (($chardata[$i]['type'] == 'AN') || ($chardata[$i]['type'] == 'EN')) { $chardata[$i]['level'] += 2; }
+			if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_R) { $chardata[$i]['level'] += 1; }
+			else if (($chardata[$i]['type'] == UCDN::BIDI_CLASS_AN) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN)) { $chardata[$i]['level'] += 2; }
 		}
 		$maxlevel = max($chardata[$i]['level'],$maxlevel);
 	}
 
+// NB
+//	Separate into lines at this point************
+//
+
 	// L1. On each line, reset the embedding level of the following characters to the paragraph embedding level:
-	//	1. Segment separators,
-	//	2. Paragraph separators,
-	//	3. Any sequence of whitespace characters preceding a segment separator or paragraph separator, and
-	//	4. Any sequence of whitespace characters at the end of the line.
+	//	1. Segment separators (Tab) 'S',
+	//	2. Paragraph separators 'B',
+	//	3. Any sequence of whitespace characters 'WS' preceding a segment separator or paragraph separator, and
+	//	4. Any sequence of whitespace characters 'WS' at the end of the line.
+	//	The types of characters used here are the original types, not those modified by the previous phase cf N1 and N2*******
+	//	Because a Paragraph Separator breaks lines, there will be at most one per line, at the end of that line.
+
 	for ($i=($numchars-1); $i>0; $i--) {
-		if ($chardata[$i]['type'] == 'WS') {
+		if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_WS || (isset($chardata[$i]['orig_type']) && $chardata[$i]['orig_type'] == UCDN::BIDI_CLASS_WS)) {
 				$chardata[$i]['level'] = $pel;
 		}
 		else { break; }
@@ -4330,15 +4559,15 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 
 	// L2. From the highest level found in the text to the lowest odd level on each line, including intermediate levels not actually present in the text, reverse any contiguous sequence of characters that are at that level or higher.
 	for ($j=$maxlevel; $j > 0; $j--) {
-		$ordarray = Array();
-		$revarr = Array();
+		$ordarray = array();
+		$revarr = array();
 		$onlevel = false;
 		for ($i=0; $i < $numchars; ++$i) {
 			if ($chardata[$i]['level'] >= $j) {
 				$onlevel = true;
 
 				// L4. A character is depicted by a mirrored glyph if and only if (a) the resolved directionality of that character is R, and (b) the Bidi_Mirrored property value of that character is true. 
-				if (isset(UCDN::$mirror_pairs[$chardata[$i]['char']]) && $chardata[$i]['type']=='R') {
+				if (isset(UCDN::$mirror_pairs[$chardata[$i]['char']]) && $chardata[$i]['type']==UCDN::BIDI_CLASS_R) {
 					$chardata[$i]['char'] = UCDN::$mirror_pairs[$chardata[$i]['char']];
 				}
 
@@ -4373,8 +4602,8 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 			$GPOS[$cctr] = $cd['GPOSinfo'];
 			$GPOS[$cctr]['wDir'] = ($cd['level'] % 2) ? 'RTL' : 'LTR';
 		}
-		if($cd['type']=='L') { $rtl_content |= 1; }
-		else if($cd['type']=='R') { $rtl_content |= 2; }
+		if($cd['type']==UCDN::BIDI_CLASS_L) { $rtl_content |= 1; }
+		else if($cd['type']==UCDN::BIDI_CLASS_R) { $rtl_content |= 2; }
 		$cctr++;
 	}
 
@@ -4383,11 +4612,672 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 	if ($useGPOS) {
 		$chunkOTLdata['GPOSinfo'] = $GPOS;
 	}
-	// NB Don't reverse chunkOTLdata['bidi_type'] - req'd in WriteFlowing Block for $lastBidiType in original logical order
-	// NB Does reverse chunkOTLdata['group']
 
 	return array($e,$rtl_content);
 }
+
+// **********************************************************************************************
+// The following versions for BidiSort work on amalgamated chunks to process the whole paragraph
+// Firstly set the level in the OTLdata - called from fn printbuffer() [_bidiPrepare]
+// Secondly re-order - called from fn writeFlowingBlock and FinishFlowingBlock, when already divided into lines. [_bidiReorder]
+// **********************************************************************************************
+
+function _bidiPrepare(&$para, $dir) {
+
+	// Set the initial paragraph embedding level
+	$pel = 0;	// paragraph embedding level
+	if ($dir == 'rtl') { $pel = 1; } 
+
+	// X1. Begin by setting the current embedding level to the paragraph embedding level. Set the directional override status to neutral. 
+	// Current Embedding Level
+	$cel = $pel;
+	// directional override status (-1 is Neutral)
+	$dos = -1;
+	$remember = array();
+	$controlchars = false;
+	$strongrtl = false;
+	$diid = 0;	// direction isolate ID
+	$dictr = 0;	// direction isolate counter
+
+	// Process each character iteratively, applying rules X2 through X9. Only embedding levels from 0 to 61 are valid in this phase.
+	// In the resolution of levels in rules I1 and I2, the maximum embedding level of 62 can be reached.
+	$numchunks = count($para);
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$chunkOTLdata =& $para[$nc][18];
+
+		$numchars = count($chunkOTLdata['char_data']);
+		for ($i=0; $i < $numchars; ++$i) {
+		  if ($chunkOTLdata['char_data'][$i]['uni'] == 8235) {	// RLE
+			// X2. With each RLE, compute the least greater odd embedding level.
+			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to neutral.
+			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
+			$next_level = $cel + ($cel % 2) + 1;
+			if ($next_level < 62) {
+				$remember[] = array('num' => 8235, 'cel' => $cel, 'dos' => $dos);
+				$cel = $next_level;
+				$dos = -1;
+				$controlchars = true;
+			}
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8234) {	// LRE
+			// X3. With each LRE, compute the least greater even embedding level.
+			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to neutral.
+			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
+			$next_level = $cel + 2 - ($cel % 2);
+			if ( $next_level < 62 ) {
+				$remember[] = array('num' => 8234, 'cel' => $cel, 'dos' => $dos);
+				$cel = $next_level;
+				$dos = -1;
+				$controlchars = true;
+			}
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8238) { // RLO
+			// X4. With each RLO, compute the least greater odd embedding level.
+			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to right-to-left.
+			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
+			$next_level = $cel + ($cel % 2) + 1;
+			if ($next_level < 62) {
+				$remember[] = array('num' => 8238, 'cel' => $cel, 'dos' => $dos);
+				$cel = $next_level;
+				$dos = UCDN::BIDI_CLASS_R;
+				$controlchars = true;
+			}
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8237) {	// LRO
+			// X5. With each LRO, compute the least greater even embedding level.
+			//	a. If this new level would be valid, then this embedding code is valid. Remember (push) the current embedding level and override status. Reset the current level to this new level, and reset the override status to left-to-right.
+			//	b. If the new level would not be valid, then this code is invalid. Do not change the current level or override status.
+			$next_level = $cel + 2 - ($cel % 2);
+			if ( $next_level < 62 ) {
+				$remember[] = array('num' => 8237, 'cel' => $cel, 'dos' => $dos);
+				$cel = $next_level;
+				$dos = UCDN::BIDI_CLASS_L;
+				$controlchars = true;
+			}
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8236) {	// PDF
+			// X7. With each PDF, determine the matching embedding or override code. If there was a valid matching code, restore (pop) the last remembered (pushed) embedding level and directional override.
+			if (count($remember)) {
+				$last = count($remember ) - 1;
+				if (($remember[$last]['num'] == 8235) || ($remember[$last]['num'] == 8234) || ($remember[$last]['num'] == 8238) || 
+					($remember[$last]['num'] == 8237)) {
+					$match = array_pop($remember);
+					$cel = $match['cel'];
+					$dos = $match['dos'];
+				}
+			}
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8294 || $chunkOTLdata['char_data'][$i]['uni'] == 8295 ||
+			$chunkOTLdata['char_data'][$i]['uni'] == 8296) {	// LRI // RLI // FSI
+			// X5a. With each RLI:
+			// X5b. With each LRI:
+			// X5c. With each FSI, apply rules P2 and P3 for First Strong character
+			//	Set the RLI/LRI/FSI embedding level to the embedding level of the last entry on the directional status stack.
+			if ($dos != -1) { $chardir = $dos; } 
+			else { $chardir = $chunkOTLdata['char_data'][$i]['bidi_class']; }
+			$chunkOTLdata['char_data'][$i]['level'] = $cel;
+			$chunkOTLdata['char_data'][$i]['type'] = $chardir;
+			$chunkOTLdata['char_data'][$i]['diid'] = $diid;
+
+			$fsi = '';
+			// X5c. With each FSI, apply rules P2 and P3 within the isolate run for First Strong character
+			if ($chunkOTLdata['char_data'][$i]['uni'] == 8296) {	// FSI
+				$lvl = 0;
+				$nc2 = $nc;
+				$i2 = $i;
+				while (!($nc2==($numchunks-1) && $i2==((count($para[$nc2][18]['char_data']))-1))) { 	// while not at end of last chunk
+					$i2++;
+					if ($i2 >= count($para[$nc2][18]['char_data'])) { 
+						$nc2++;
+						$i2 = 0;
+					}
+					if ($lvl > 0) { continue; }
+					if ($para[$nc2][18]['char_data'][$i2]['uni'] == 8294 || $para[$nc2][18]['char_data'][$i2]['uni'] == 8295 || $para[$nc2][18]['char_data'][$i2]['uni'] == 8296) {
+						$lvl++;
+						continue;
+					}
+					if ($para[$nc2][18]['char_data'][$i2]['uni'] == 8297) {
+						$lvl--;
+						if ($lvl < 0) { break; }
+					}
+					if ($para[$nc2][18]['char_data'][$i2]['bidi_class'] === UCDN::BIDI_CLASS_L || $para[$nc2][18]['char_data'][$i2]['bidi_class'] == UCDN::BIDI_CLASS_AL || $para[$nc2][18]['char_data'][$i2]['bidi_class'] === UCDN::BIDI_CLASS_R) {
+						$fsi = $para[$nc2][18]['char_data'][$i2]['bidi_class'];
+						break;
+					}
+				}
+				// if fsi not found, fsi is same as paragraph embedding level
+				if (!$fsi && $fsi!==0) {
+					if ($pel==1) { $fsi = UCDN::BIDI_CLASS_R ; }
+					else { $fsi = UCDN::BIDI_CLASS_L ; }
+				}
+			}
+
+			if ($chunkOTLdata['char_data'][$i]['uni'] == 8294 || $fsi === UCDN::BIDI_CLASS_L ) {	// LRI or FSI-L
+			//	Compute the least even embedding level greater than the embedding level of the last entry on the directional status stack.
+				$next_level = $cel + 2 - ($cel % 2);
+			}
+			else if ($chunkOTLdata['char_data'][$i]['uni'] == 8295 || $fsi == UCDN::BIDI_CLASS_R || $fsi == UCDN::BIDI_CLASS_AL ) {	// RLI or FSI-R
+			//	Compute the least odd embedding level greater than the embedding level of the last entry on the directional status stack.
+				$next_level = $cel + ($cel % 2) + 1;
+			}
+
+
+			//	Increment the isolate count by one, and push an entry consisting of the new embedding level,
+			//	neutral directional override status, and true directional isolate status onto the directional status stack.
+			$remember[] = array('num' => $chunkOTLdata['char_data'][$i]['uni'], 'cel' => $cel, 'dos' => $dos, 'diid' => $diid);
+			$cel = $next_level;
+			$dos = -1;
+			$diid = ++$dictr;	// Set new direction isolate ID after incrementing direction isolate counter
+
+			$controlchars = true;
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 8297) {	// PDI
+			// X6a. With each PDI, perform the following steps:
+			//	Pop the last entry from the directional status stack and decrement the isolate count by one.
+			while (count($remember)) {
+				$last = count($remember ) - 1;
+				if (($remember[$last]['num'] == 8294) || ($remember[$last]['num'] == 8295) || ($remember[$last]['num'] == 8296)) {
+					$match = array_pop($remember);
+					$cel = $match['cel'];
+					$dos = $match['dos'];
+					$diid = $match['diid'];
+					break;
+				}
+				// End/close any open embedding states not explicitly closed during the isolate
+				else if (($remember[$last]['num'] == 8235) || ($remember[$last]['num'] == 8234) || ($remember[$last]['num'] == 8238) ||
+					($remember[$last]['num'] == 8237)) {
+					$match = array_pop($remember);
+				}
+			}
+			//	In all cases, set the PDI’s level to the embedding level of the last entry on the directional status stack left after the steps above.
+			//	NB The level assigned to an isolate initiator is always the same as that assigned to the matching PDI.
+			if ($dos != -1) { $chardir = $dos; } 
+			else { $chardir = $chunkOTLdata['char_data'][$i]['bidi_class']; }
+			$chunkOTLdata['char_data'][$i]['level'] = $cel;
+			$chunkOTLdata['char_data'][$i]['type'] = $chardir;
+			$chunkOTLdata['char_data'][$i]['diid'] = $diid;
+			$controlchars = true;
+		  }
+		  else if ($chunkOTLdata['char_data'][$i]['uni'] == 10) {	// NEW LINE
+			// Reset to start values
+			$cel = $pel;
+			$dos = -1;
+			$remember = array();
+		  }
+		  else {
+			// X6. For all types besides RLE, LRE, RLO, LRO, and PDF:
+			//	a. Set the level of the current character to the current embedding level.
+			//	b. When the directional override status is not neutral, reset the current character type to directional override status.
+			if ($dos != -1) { $chardir = $dos; } 
+			else {
+				$chardir = $chunkOTLdata['char_data'][$i]['bidi_class'];
+				if ($chardir == UCDN::BIDI_CLASS_R || $chardir == UCDN::BIDI_CLASS_AL) { $strongrtl = true; }
+			}
+			$chunkOTLdata['char_data'][$i]['level'] = $cel;
+			$chunkOTLdata['char_data'][$i]['type'] = $chardir;
+			$chunkOTLdata['char_data'][$i]['diid'] = $diid;
+		  }
+		}
+		// X8. All explicit directional embeddings and overrides are completely terminated at the end of each paragraph.
+		// Paragraph separators are not included in the embedding.
+		// X9. Remove all RLE, LRE, RLO, LRO, and PDF codes.
+		if ($controlchars) {
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x80\xaa");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x80\xab");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x80\xac");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x80\xad");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x80\xae");
+			preg_replace("/\x{202a}-\x{202e}/u", '', $para[$nc][0]);
+		}
+	}
+
+	// Remove any blank chunks made by removing directional codes
+	$numchunks = count($para);
+	for ($nc=($numchunks-1);$nc>=0;$nc--) {
+		if (count($para[$nc][18]['char_data'])==0) { array_splice($para, $nc, 1); }
+	}
+	if ($dir != 'rtl' && !$strongrtl && !$controlchars) { return; }
+
+	$numchunks = count($para);
+
+	// X10. Determine the start-of-sequence (sor) and end-of-sequence (eor) types, either L or R, for each isolating run sequence. These depend on the higher of the two levels on either side of the sequence boundary:
+	// For sor, compare the level of the first character in the sequence with the level of the character preceding it in the paragraph or if there is none, with the paragraph embedding level.
+	// For eor, compare the level of the last character in the sequence with the level of the character following it in the paragraph or if there is none, with the paragraph embedding level.
+	// If the higher level is odd, the sor or eor is R; otherwise, it is L.
+
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$prelevel = $pel;	
+		$postlevel = $pel;
+		$firstchar = true;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				$right = $postlevel;
+				$nc2 = $nc;
+				$i2 = $i;
+				while (!($nc2==($numchunks-1) && $i2==((count($para[$nc2][18]['char_data']))-1))) { 	// while not at end of last chunk
+					$i2++;
+					if ($i2 >= count($para[$nc2][18]['char_data'])) { 
+						$nc2++;
+						$i2 = 0;
+					}
+
+					if (isset($para[$nc2][18]['char_data'][$i2]['diid']) && $para[$nc2][18]['char_data'][$i2]['diid']==$ir) { $right = $para[$nc2][18]['char_data'][$i2]['level']; break; }
+				}
+
+				$level = $chardata[$i]['level'];
+				if ($firstchar || $level!=$prelevel) {
+					$chardata[$i]['sor'] = max($prelevel, $level) % 2 ? UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+				}
+				if (($nc==($numchunks-1) && $i==($numchars-1)) || $level != $right) {
+					$chardata[$i]['eor'] = max($right, $level) % 2 ? UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+				}
+				$prelevel = $level;
+				$firstchar = false;
+			}
+		}
+	}
+
+
+	// 3.3.3 Resolving Weak Types
+	// Weak types are now resolved one level run at a time. At level run boundaries where the type of the character on the other side of the boundary is required, the type assigned to sor or eor is used.
+	// Nonspacing marks are now resolved based on the previous characters.
+
+	// W1. Examine each nonspacing mark (NSM) in the level run, and change the type of the NSM to the type of the previous character. If the NSM is at the start of the level run, it will get the type of sor.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$prevtype = 0;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_NSM) {
+					if (isset($chardata[$i]['sor'])) {
+						$chardata[$i]['type'] = $chardata[$i]['sor'];
+					}
+					else {
+						$chardata[$i]['type'] = $prevtype;
+					}
+				}
+				$prevtype = $chardata[$i]['type'];
+			}
+		}
+	}
+
+	// W2. Search backward from each instance of a European number until the first strong type (R, L, AL or sor) is found. If an AL is found, change the type of the European number to Arabic number.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$laststrongtype = -1;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				if (isset($chardata[$i]['sor'])) { $laststrongtype = $chardata[$i]['sor']; }
+				if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN && $laststrongtype == UCDN::BIDI_CLASS_AL ) { 
+					$chardata[$i]['type'] = UCDN::BIDI_CLASS_AN; 
+				}
+				if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_L || $chardata[$i]['type'] == UCDN::BIDI_CLASS_R || $chardata[$i]['type'] == UCDN::BIDI_CLASS_AL) { 
+					$laststrongtype =  $chardata[$i]['type']; 
+				}
+			}
+		}
+	}
+
+
+	// W3. Change all ALs to R.
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$chardata =& $para[$nc][18]['char_data'];
+		$numchars = count($chardata);
+		for ($i=0; $i < $numchars; ++$i) {
+ 			if (isset($chardata[$i]['type']) && $chardata[$i]['type'] == UCDN::BIDI_CLASS_AL) { $chardata[$i]['type'] = UCDN::BIDI_CLASS_R; }
+		}
+	}
+
+
+	// W4. A single European separator between two European numbers changes to a European number. A single common separator between two numbers of the same type changes to that type.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$prevtype = -1;
+		$nexttype = -1;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+
+				// Get next type
+				$nexttype = -1; 
+				$nc2 = $nc;
+				$i2 = $i;
+				while (!($nc2==($numchunks-1) && $i2==((count($para[$nc2][18]['char_data']))-1))) { 	// while not at end of last chunk
+					$i2++;
+					if ($i2 >= count($para[$nc2][18]['char_data'])) { 
+						$nc2++;
+						$i2 = 0;
+					}
+
+					if (isset($para[$nc2][18]['char_data'][$i2]['diid']) && $para[$nc2][18]['char_data'][$i2]['diid']==$ir) { $nexttype = $para[$nc2][18]['char_data'][$i2]['type']; break; }
+				}
+
+				if (!isset($chardata[$i]['sor']) && !isset($chardata[$i]['eor'])) {
+					if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ES && $prevtype == UCDN::BIDI_CLASS_EN && $nexttype == UCDN::BIDI_CLASS_EN) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
+					}
+					else if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS && $prevtype == UCDN::BIDI_CLASS_EN && $nexttype == UCDN::BIDI_CLASS_EN) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
+					}
+					else if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS && $prevtype == UCDN::BIDI_CLASS_AN && $nexttype == UCDN::BIDI_CLASS_AN) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_AN;
+					}
+				}
+				$prevtype = $chardata[$i]['type'];
+			}
+		}
+	}
+
+	// W5. A sequence of European terminators adjacent to European numbers changes to all European numbers.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$prevtype = -1;
+		$nexttype = -1;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				if (isset($chardata[$i]['sor'])) { $prevtype = $chardata[$i]['sor']; }
+
+				if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ET) {
+					if ($prevtype == UCDN::BIDI_CLASS_EN) {
+						$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
+					}
+					else if (!isset($chardata[$i]['eor'])) {
+						$nexttype = -1;
+						$nc2 = $nc;
+						$i2 = $i;
+						while (!($nc2==($numchunks-1) && $i2==((count($para[$nc2][18]['char_data']))-1))) { // while not at end of last chunk
+							$i2++;
+							if ($i2 >= count($para[$nc2][18]['char_data'])) { 
+								$nc2++;
+								$i2 = 0;
+							}
+							if ($para[$nc2][18]['char_data'][$i2]['diid']!=$ir) { continue; }
+							$nexttype = $para[$nc2][18]['char_data'][$i2]['type']; 
+							if (isset($para[$nc2][18]['char_data'][$i2]['sor'])) { break; }
+							if ($nexttype == UCDN::BIDI_CLASS_EN) {
+								$chardata[$i]['type'] = UCDN::BIDI_CLASS_EN;
+								break;
+							}
+							else if ($nexttype != UCDN::BIDI_CLASS_ET) { break; }
+						}
+					}
+				}
+				$prevtype = $chardata[$i]['type'];
+			}
+		}
+	}
+
+	// W6. Otherwise, separators and terminators change to Other Neutral.
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$chardata =& $para[$nc][18]['char_data'];
+		$numchars = count($chardata);
+		for ($i=0; $i < $numchars; ++$i) {
+			if (isset($chardata[$i]['type']) && (($chardata[$i]['type'] == UCDN::BIDI_CLASS_ET) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ES) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_CS))) {
+				$chardata[$i]['type'] = UCDN::BIDI_CLASS_ON;
+			}
+		}
+	}
+
+	//W7. Search backward from each instance of a European number until the first strong type (R, L, or sor) is found. If an L is found, then change the type of the European number to L.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$laststrongtype = -1;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				if (isset($chardata[$i]['sor'])) { $laststrongtype = $chardata[$i]['sor']; }
+				if (isset($chardata[$i]['type']) && $chardata[$i]['type'] == UCDN::BIDI_CLASS_EN && $laststrongtype == UCDN::BIDI_CLASS_L ) { 
+					$chardata[$i]['type'] = UCDN::BIDI_CLASS_L; 
+				}
+				if (isset($chardata[$i]['type']) && ($chardata[$i]['type'] == UCDN::BIDI_CLASS_L || $chardata[$i]['type'] == UCDN::BIDI_CLASS_R || $chardata[$i]['type'] == UCDN::BIDI_CLASS_AL)) { 
+					$laststrongtype =  $chardata[$i]['type']; 
+				}
+			}
+		}
+	}
+
+	// N1. A sequence of neutrals takes the direction of the surrounding strong text if the text on both sides has the same direction. European and Arabic numbers act as if they were R in terms of their influence on neutrals. Start-of-level-run (sor) and end-of-level-run (eor) are used at level run boundaries.
+	for ($ir=0; $ir<=$dictr;$ir++) {
+		$laststrongtype = -1;
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$chardata =& $para[$nc][18]['char_data'];
+			$numchars = count($chardata);
+			for ($i=0; $i < $numchars; ++$i) {
+				if (!isset($chardata[$i]['diid']) || $chardata[$i]['diid']!=$ir) { continue; }	// Ignore characters in a different isolate run
+				if (isset($chardata[$i]['sor'])) { $laststrongtype = $chardata[$i]['sor']; }
+				if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ON || $chardata[$i]['type'] == UCDN::BIDI_CLASS_WS) {
+					$left = -1;
+					// LEFT
+					if ($laststrongtype == UCDN::BIDI_CLASS_R || $laststrongtype == UCDN::BIDI_CLASS_EN || $laststrongtype == UCDN::BIDI_CLASS_AN) { 
+						$left = UCDN::BIDI_CLASS_R; 
+					}
+					else if ($laststrongtype == UCDN::BIDI_CLASS_L) { 
+						$left = UCDN::BIDI_CLASS_L; 
+					}
+					// RIGHT
+					$right = -1;
+					// move to the right of any following neutrals OR hit a run boundary
+
+					if (isset($chardata[$i]['eor'])) { 
+						$right = $chardata[$i]['eor']; 
+					}
+					else {
+						$nexttype = -1;
+						$nc2 = $nc;
+						$i2 = $i;
+						while (!($nc2==($numchunks-1) && $i2==((count($para[$nc2][18]['char_data']))-1))) { // while not at end of last chunk
+							$i2++;
+							if ($i2 >= count($para[$nc2][18]['char_data'])) { 
+								$nc2++;
+								$i2 = 0;
+							}
+							if (!isset($para[$nc2][18]['char_data'][$i2]['diid']) || $para[$nc2][18]['char_data'][$i2]['diid']!=$ir) { continue; }
+							$nexttype = $para[$nc2][18]['char_data'][$i2]['type']; 
+							if ($nexttype == UCDN::BIDI_CLASS_R || $nexttype == UCDN::BIDI_CLASS_EN || $nexttype == UCDN::BIDI_CLASS_AN) { 
+								$right =  UCDN::BIDI_CLASS_R; 
+								break;
+							}
+							else if ($nexttype == UCDN::BIDI_CLASS_L) { 
+								$right =  UCDN::BIDI_CLASS_L; 
+								break;
+							}
+							else if (isset($para[$nc2][18]['char_data'][$i2]['eor'])) { 
+								$right = $para[$nc2][18]['char_data'][$i2]['eor']; 
+								break;
+							}
+						}
+					}
+
+					if ($left > -1 && $left==$right) {
+						$chardata[$i]['orig_type'] = $chardata[$i]['type'];	// Need to store the original 'WS' for reference in L1 below
+						$chardata[$i]['type'] = $left;
+					}
+				}
+				else if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_L || $chardata[$i]['type'] == UCDN::BIDI_CLASS_R || $chardata[$i]['type'] == UCDN::BIDI_CLASS_EN || $chardata[$i]['type'] == UCDN::BIDI_CLASS_AN) { 
+					$laststrongtype =  $chardata[$i]['type']; 
+				}
+			}
+		}
+	}
+
+	// N2. Any remaining neutrals take the embedding direction
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$chardata =& $para[$nc][18]['char_data'];
+		$numchars = count($chardata);
+		for ($i=0; $i < $numchars; ++$i) {
+			if (isset($chardata[$i]['type']) && ($chardata[$i]['type'] == UCDN::BIDI_CLASS_ON || $chardata[$i]['type'] == UCDN::BIDI_CLASS_WS)) {
+				$chardata[$i]['orig_type'] = $chardata[$i]['type'];	// Need to store the original 'WS' for reference in L1 below
+				$chardata[$i]['type'] = ($chardata[$i]['level'] % 2) ?  UCDN::BIDI_CLASS_R : UCDN::BIDI_CLASS_L;
+			}
+		}
+	}
+
+	// I1. For all characters with an even (left-to-right) embedding direction, those of type R go up one level and those of type AN or EN go up two levels.
+	// I2. For all characters with an odd (right-to-left) embedding direction, those of type L, EN or AN go up one level.
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$chardata =& $para[$nc][18]['char_data'];
+		$numchars = count($chardata);
+		for ($i=0; $i < $numchars; ++$i) {
+			if (isset($chardata[$i]['level'])) { 
+				$odd = $chardata[$i]['level'] % 2;
+				if ($odd) {
+					if (($chardata[$i]['type'] == UCDN::BIDI_CLASS_L) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_AN) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN)) {
+						$chardata[$i]['level'] += 1;
+					}
+				}
+				else {
+					if ($chardata[$i]['type'] == UCDN::BIDI_CLASS_R) { $chardata[$i]['level'] += 1; }
+					else if (($chardata[$i]['type'] == UCDN::BIDI_CLASS_AN) || ($chardata[$i]['type'] == UCDN::BIDI_CLASS_EN)) { $chardata[$i]['level'] += 2; }
+				}
+			}
+		}
+	}
+
+	// Remove Isolate formatters
+	$numchunks = count($para);
+	if ($controlchars) {
+		for ($nc=0;$nc<$numchunks;$nc++) {
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x81\xa6");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x81\xa7");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x81\xa8");
+			$this->removeChar($para[$nc][0], $para[$nc][18], "\xe2\x81\xa9");
+			preg_replace("/\x{2066}-\x{2069}/u", '', $para[$nc][0]);
+		}
+		// Remove any blank chunks made by removing directional codes
+		for ($nc=($numchunks-1);$nc>=0;$nc--) {
+			if (count($para[$nc][18]['char_data'])==0) { array_splice($para, $nc, 1); }
+		}
+	}
+
+}
+
+
+
+// Reorder, once divided into lines
+
+function _bidiReorder(&$chunkorder, &$content, &$cOTLdata, $blockdir) {
+
+	$bidiData = array();
+
+	// First combine into one array (and get the highest level in use)
+	$numchunks = count($content);
+	$maxlevel = 0;
+	for ($nc=0;$nc<$numchunks;$nc++) {
+		$numchars = count($cOTLdata[$nc]['char_data']);
+		for ($i=0; $i < $numchars; ++$i) {
+
+			$carac = array();
+			if (isset($cOTLdata[$nc]['GPOSinfo'][$i])) {$carac['GPOSinfo'] = $cOTLdata[$nc]['GPOSinfo'][$i]; }
+			$carac['uni'] = $cOTLdata[$nc]['char_data'][$i]['uni'];
+			if (isset($cOTLdata[$nc]['char_data'][$i]['type'])) $carac['type'] = $cOTLdata[$nc]['char_data'][$i]['type'];
+			if (isset($cOTLdata[$nc]['char_data'][$i]['level'])) $carac['level'] = $cOTLdata[$nc]['char_data'][$i]['level'];
+			if (isset($cOTLdata[$nc]['char_data'][$i]['orig_type'])) { $carac['orig_type'] = $cOTLdata[$nc]['char_data'][$i]['orig_type']; }
+			$carac['group'] = $cOTLdata[$nc]['group']{$i};
+			$carac['chunkid'] = $chunkorder[$nc];	// gives font id and/or object ID
+
+			$maxlevel = max((isset($carac['level']) ? $carac['level'] : 0),$maxlevel);
+			$bidiData[] = $carac;
+		}
+	}
+	if ($maxlevel==0) { return; }
+
+	$numchars = count($bidiData);
+
+	// L1. On each line, reset the embedding level of the following characters to the paragraph embedding level:
+	//	1. Segment separators (Tab) 'S',
+	//	2. Paragraph separators 'B',
+	//	3. Any sequence of whitespace characters 'WS' preceding a segment separator or paragraph separator, and
+	//	4. Any sequence of whitespace characters 'WS' at the end of the line.
+	//	The types of characters used here are the original types, not those modified by the previous phase cf N1 and N2*******
+	//	Because a Paragraph Separator breaks lines, there will be at most one per line, at the end of that line.
+
+	// Set the initial paragraph embedding level
+	if ($blockdir == 'rtl') { $pel = 1; } 
+	else { $pel = 0; }
+
+	for ($i=($numchars-1); $i>0; $i--) {
+		if ($bidiData[$i]['type'] == UCDN::BIDI_CLASS_WS || (isset($bidiData[$i]['orig_type']) && $bidiData[$i]['orig_type'] == UCDN::BIDI_CLASS_WS)) {
+				$bidiData[$i]['level'] = $pel;
+		}
+		else { break; }
+	}
+
+
+	// L2. From the highest level found in the text to the lowest odd level on each line, including intermediate levels not actually present in the text, reverse any contiguous sequence of characters that are at that level or higher.
+	for ($j=$maxlevel; $j > 0; $j--) {
+		$ordarray = array();
+		$revarr = array();
+		$onlevel = false;
+		for ($i=0; $i < $numchars; ++$i) {
+			if ($bidiData[$i]['level'] >= $j) {
+				$onlevel = true;
+				// L4. A character is depicted by a mirrored glyph if and only if (a) the resolved directionality of that character is R, and (b) the Bidi_Mirrored property value of that character is true. 
+				if (isset(UCDN::$mirror_pairs[$bidiData[$i]['uni']]) && $bidiData[$i]['type']==UCDN::BIDI_CLASS_R) {
+					$bidiData[$i]['uni'] = UCDN::$mirror_pairs[$bidiData[$i]['uni']];
+				}
+
+				$revarr[] = $bidiData[$i];
+			}
+			else {
+				if ($onlevel) {
+					$revarr = array_reverse($revarr);
+					$ordarray = array_merge($ordarray, $revarr);
+					$revarr = Array();
+					$onlevel = false;
+				}
+				$ordarray[] = $bidiData[$i];
+			}
+		}
+		if ($onlevel) {
+			$revarr = array_reverse($revarr);
+			$ordarray = array_merge($ordarray, $revarr);
+		}
+		$bidiData = $ordarray;
+ 	}
+
+	$content = array();
+	$cOTLdata = array();
+	$chunkorder = array();
+
+
+
+	$nc = -1;	// New chunk order ID
+	$chunkid = -1;
+
+	foreach ($bidiData as $carac) {
+		if ($carac['chunkid'] != $chunkid) {
+			$nc++;
+			$chunkorder[$nc] = $carac['chunkid'];
+			$cctr = 0;
+			$content[$nc] = '';
+			$cOTLdata[$nc]['group'] = '';
+		}
+		if ($carac['uni'] != 0xFFFC) {  	// Object replacement character (65532)
+			$content[$nc] .= code2utf($carac['uni']);
+			$cOTLdata[$nc]['group'] .= $carac['group'];
+			if (!empty($carac['GPOSinfo'])) {
+				if (isset($carac['GPOSinfo'])) { $cOTLdata[$nc]['GPOSinfo'][$cctr] = $carac['GPOSinfo']; }
+				$cOTLdata[$nc]['GPOSinfo'][$cctr]['wDir'] = ($carac['level'] % 2) ? 'RTL' : 'LTR';
+			}
+		}
+		$chunkid = $carac['chunkid'];
+		$cctr++;
+	}
+
+}
+
+
 
 
 
@@ -4400,15 +5290,11 @@ function _bidiSort($ta, $str='', $dir, &$chunkOTLdata, $useGPOS, $lastBidiText='
 ////////////////////////////////////////////////////////////////
 function splitOTLdata(&$cOTLdata, $OTLcutoffpos, $OTLrestartpos='') {
 	if (!$OTLrestartpos) { $OTLrestartpos = $OTLcutoffpos; }
-	$newOTLdata = array();
-
-	$newOTLdata['bidi_type'] = substr($cOTLdata['bidi_type'],$OTLrestartpos);
-	$cOTLdata['bidi_type'] = substr($cOTLdata['bidi_type'],0,$OTLcutoffpos);
-
+	$newOTLdata = array('GPOSinfo' => array(), 'char_data' => array());
 	$newOTLdata['group'] = substr($cOTLdata['group'],$OTLrestartpos);
 	$cOTLdata['group'] = substr($cOTLdata['group'],0,$OTLcutoffpos);
 
-	if ($cOTLdata['GPOSinfo']) {
+	if (isset($cOTLdata['GPOSinfo']) && $cOTLdata['GPOSinfo']) {
 		foreach($cOTLdata['GPOSinfo'] AS $k => $val) {
 			if ($k >= $OTLrestartpos) {
 				$newOTLdata['GPOSinfo'][($k - $OTLrestartpos)] = $val;
@@ -4419,17 +5305,20 @@ function splitOTLdata(&$cOTLdata, $OTLcutoffpos, $OTLrestartpos='') {
 			}
 		}
 	}
+	if (isset($cOTLdata['char_data'])) {
+		$newOTLdata['char_data'] = array_slice($cOTLdata['char_data'], $OTLrestartpos);
+		array_splice($cOTLdata['char_data'], $OTLcutoffpos);
+	}
 
 	// Not necessary - easier to debug
-	if ($cOTLdata['GPOSinfo']) ksort($cOTLdata['GPOSinfo']);
-	if ($newOTLdata['GPOSinfo']) ksort($newOTLdata['GPOSinfo']);
+	if (isset($cOTLdata['GPOSinfo'])) ksort($cOTLdata['GPOSinfo']);
+	if (isset($newOTLdata['GPOSinfo'])) ksort($newOTLdata['GPOSinfo']);
 
 	return $newOTLdata;
 }
 
 function sliceOTLdata($OTLdata, $pos, $len) {
-	$newOTLdata = array();
-	$newOTLdata['bidi_type'] = substr($OTLdata['bidi_type'],$pos,$len);
+	$newOTLdata = array('GPOSinfo' => array(), 'char_data' => array());
 	$newOTLdata['group'] = substr($OTLdata['group'],$pos,$len);
 
 	if ($OTLdata['GPOSinfo']) {
@@ -4439,6 +5328,8 @@ function sliceOTLdata($OTLdata, $pos, $len) {
 			}
 		}
 	}
+
+	if (isset($OTLdata['char_data'])) { $newOTLdata['char_data'] = array_slice($OTLdata['char_data'], $pos, $len); }
 
 	// Not necessary - easier to debug
 	if ($newOTLdata['GPOSinfo']) ksort($newOTLdata['GPOSinfo']);
@@ -4450,33 +5341,53 @@ function sliceOTLdata($OTLdata, $pos, $len) {
 function removeChar(&$txt, &$cOTLdata, $char) {
 	while(mb_strpos($txt, $char, 0, $this->mpdf->mb_enc )!== false) {
 		$pos = mb_strpos($txt, $char, 0, $this->mpdf->mb_enc );
-		$newOTLdata = array();
-		$cOTLdata['bidi_type'] = substr_replace($cOTLdata['bidi_type'], '', $pos, 1);
+		$newGPOSinfo = array();
 		$cOTLdata['group'] = substr_replace($cOTLdata['group'], '', $pos, 1);
 		if ($cOTLdata['GPOSinfo']) {
 			foreach($cOTLdata['GPOSinfo'] AS $k => $val) {
 				if ($k > $pos) {
-					$newOTLdata['GPOSinfo'][($k - 1)] = $val;
+					$newGPOSinfo[($k - 1)] = $val;
 				}
 				else if ($k!=$pos) {
-					$newOTLdata['GPOSinfo'][$k] = $val;
+					$newGPOSinfo[$k] = $val;
 				}
 			}
-			$cOTLdata['GPOSinfo'] = $newOTLdata['GPOSinfo'];
+			$cOTLdata['GPOSinfo'] = $newGPOSinfo;
 		}
+		if (isset($cOTLdata['char_data'])) { array_splice($cOTLdata['char_data'], $pos, 1); }
+
 		$txt = preg_replace("/".$char."/",'',$txt, 1);
 	}
 }
 
+// Remove one or more occurrences of $char (single character) from $txt and adjust OTLdata
+function replaceSpace(&$txt, &$cOTLdata) {
+	$char = chr(194).chr(160);	// NBSP
+	while(mb_strpos($txt, $char, 0, $this->mpdf->mb_enc )!== false) {
+		$pos = mb_strpos($txt, $char, 0, $this->mpdf->mb_enc );
+		if ($cOTLdata['char_data'][$pos]['uni'] == 160) {
+			$cOTLdata['char_data'][$pos]['uni'] = 32;
+		}
+		$txt = preg_replace("/".$char."/",' ',$txt, 1);
+	}
+}
+
 function trimOTLdata(&$cOTLdata, $Left=true, $Right=true) {
-	if (preg_match('/[S]+$/',$cOTLdata['group'], $m)) { $nRight = strlen($m[0]); }
-	else { $nRight = 0; }
-	if (preg_match('/^[S]+/',$cOTLdata['group'], $m)) { $nLeft = strlen($m[0]); }
-	else { $nLeft = 0; }
-	$len = strlen($cOTLdata['group']);
+
+	$len = count($cOTLdata['char_data']);
+	$nLeft = 0;
+	$nRight = 0;
+	for($i=0;$i<$len;$i++) {
+		if($cOTLdata['char_data'][$i]['uni']==32 || $cOTLdata['char_data'][$i]['uni']==12288) { $nLeft++; }	// 12288 = 0x3000 = CJK space
+		else { break; }
+	}
+	for($i=($len-1);$i>=0;$i--) {
+		if($cOTLdata['char_data'][$i]['uni']==32 || $cOTLdata['char_data'][$i]['uni']==12288) { $nRight++; }	// 12288 = 0x3000 = CJK space
+		else { break; }
+	}
+
 	// Trim Right
 	if ($Right && $nRight) {
-		$cOTLdata['bidi_type'] = substr($cOTLdata['bidi_type'],0,strlen($cOTLdata['bidi_type'])-$nRight);
 		$cOTLdata['group'] = substr($cOTLdata['group'],0,strlen($cOTLdata['group'])-$nRight);
 		if ($cOTLdata['GPOSinfo']) {
 			foreach($cOTLdata['GPOSinfo'] AS $k => $val) {
@@ -4485,10 +5396,14 @@ function trimOTLdata(&$cOTLdata, $Left=true, $Right=true) {
 				}
 			}
 		}
+		if (isset($cOTLdata['char_data'])) {
+			for($i=0;$i<$nRight;$i++) {
+				array_pop($cOTLdata['char_data']);
+			}
+		}
 	}
 	// Trim Left
 	if ($Left && $nLeft) {
-		$cOTLdata['bidi_type'] = substr($cOTLdata['bidi_type'],$nLeft);
 		$cOTLdata['group'] = substr($cOTLdata['group'],$nLeft);
 		if ($cOTLdata['GPOSinfo']) {
 			$newPOSinfo = array();
@@ -4498,6 +5413,11 @@ function trimOTLdata(&$cOTLdata, $Left=true, $Right=true) {
 				}
 			}
 			$cOTLdata['GPOSinfo'] = $newPOSinfo;
+		}
+		if (isset($cOTLdata['char_data'])) {
+			for($i=0;$i<$nLeft;$i++) {
+				array_shift($cOTLdata['char_data']);
+			}
 		}
 	}
 }
@@ -4622,9 +5542,14 @@ function trimOTLdata(&$cOTLdata, $Left=true, $Right=true) {
 					$startGlyphID = $StartGlyph + $i;
 					$endGlyphID = $StartGlyph + $i;
 					$class = $this->read_ushort();
-					for($g=$startGlyphID;$g<=$endGlyphID;$g++) {
-						if ($this->glyphToChar($g)) {
-							$GlyphByClass[$class][$this->glyphToChar($g)] = 1;
+					// Note: Font FreeSerif , tag "blws"
+					// $BacktrackClasses[0] is defined ? a mistake in the font ???
+					// Let's ignore for now
+					if ($class > 0) {
+						for($g=$startGlyphID;$g<=$endGlyphID;$g++) {
+							if ($this->glyphToChar($g)) {
+								$GlyphByClass[$class][$this->glyphToChar($g)] = 1;
+							}
 						}
 					}
 				}
@@ -4635,9 +5560,14 @@ function trimOTLdata(&$cOTLdata, $Left=true, $Right=true) {
 					$startGlyphID = $this->read_ushort();
 					$endGlyphID = $this->read_ushort();
 					$class = $this->read_ushort();
-					for($g=$startGlyphID;$g<=$endGlyphID;$g++) {
-						if ($this->glyphToChar($g)) {
-							$GlyphByClass[$class][$this->glyphToChar($g)] = 1;
+					// Note: Font FreeSerif , tag "blws"
+					// $BacktrackClasses[0] is defined ? a mistake in the font ???
+					// Let's ignore for now
+					if ($class > 0) {
+						for($g=$startGlyphID;$g<=$endGlyphID;$g++) {
+							if ($this->glyphToChar($g)) {
+								$GlyphByClass[$class][$this->glyphToChar($g)] = 1;
+							}
 						}
 					}
 				}
@@ -4713,6 +5643,8 @@ NB If change for RTL - cf. function magic_reverse_dir in mpdf.php to update
 	// 	else choose dflt if present
 	if (isset($ScriptLang['dflt'])) { return array('dflt', false); } 
 	// 	else return no scriptTag
+	if (isset($ScriptLang['latn'])) { return array('latn', false); } 
+	// 	else return no scriptTag
 	return array('',false);
 
 }
@@ -4730,10 +5662,10 @@ function _getOTLLangTag($ietf, $available) {
 	$country = '';
 	$script = '';
 	$lang = strtolower($tags[0]);
-	if ($tags[1]) { 
+	if (isset($tags[1]) && $tags[1]) { 
 		if (strlen($tags[1]) == 2) { $country = strtolower($tags[1]); }
 	}
-	if ($tags[2]) { $country = strtolower($tags[2]); }
+	if (isset($tags[2]) && $tags[2]) { $country = strtolower($tags[2]); }
 
 	if ($lang!='' && isset(UCDN::$ot_languages[$lang])) { $langsys = UCDN::$ot_languages[$lang]; }
 	else if ($lang!='' && $country !='' && isset(UCDN::$ot_languages[$lang.''.$country])) { 
@@ -4747,7 +5679,39 @@ function _getOTLLangTag($ietf, $available) {
 	return $langsys;
 }
 
+function _dumpproc($GPOSSUB, $lookupID, $subtable, $Type, $Format, $ptr, $currGlyph, $level) {
+	echo '<div style="padding-left: '.($level*2).'em;">';
+	echo $GPOSSUB .' LookupID #'.$lookupID.' Subtable#'.$subtable .' Type: '.$Type.' Format: '.$Format.'<br />';
+	echo '<div style="font-family:monospace">';
+	echo 'Glyph position: '.$ptr.' Current Glyph: '.$currGlyph.'<br />';
 
+	for ($i=0;$i<count($this->OTLdata);$i++) {
+		if ($i==$ptr) { echo '<b>'; }
+		echo $this->OTLdata[$i]['hex'] . ' ';
+		if ($i==$ptr) { echo '</b>'; }
+	}
+	echo '<br />';
+
+	for ($i=0;$i<count($this->OTLdata);$i++) {
+		if ($i==$ptr) { echo '<b>'; }
+		echo str_pad($this->OTLdata[$i]['uni'],5) . ' ';
+		if ($i==$ptr) { echo '</b>'; }
+	}
+	echo '<br />';
+
+	if ($GPOSSUB == 'GPOS') {
+		for ($i=0;$i<count($this->OTLdata);$i++) {
+			if (!empty($this->OTLdata[$i]['GPOSinfo'])) {
+				echo $this->OTLdata[$i]['hex'] . ' &#x'.$this->OTLdata[$i]['hex'].'; ';
+				print_r($this->OTLdata[$i]['GPOSinfo']);
+				echo ' '; 
+			}
+		}
+	}
+
+	echo '</div>';
+	echo '</div>';
+}
 
 
 }

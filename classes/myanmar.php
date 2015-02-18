@@ -350,7 +350,7 @@ public static function reordering_syllable (&$info, $GSUBdata, $start, $end) {
 			continue;
 		}
 
-		if ($pos == POS_AFTER_MAIN && $info[$i]['myanmar_category'] == self::OT_VBlw)
+		if ($pos == self::POS_AFTER_MAIN && $info[$i]['myanmar_category'] == self::OT_VBlw)
 		{
 			$pos = self::POS_BELOW_C;
 			$info[$i]['myanmar_position'] = $pos;
@@ -384,7 +384,7 @@ public static function reordering_syllable (&$info, $GSUBdata, $start, $end) {
 
 
 public static function is_one_of ($info, $flags) {
-	if ($info['is_ligature']) return false;	/* If it ligated, all bets are off. */
+	if (isset($info['is_ligature']) && $info['is_ligature']) return false;	/* If it ligated, all bets are off. */
 	return !!(self::FLAG($info['myanmar_category']) & $flags);
 }
 

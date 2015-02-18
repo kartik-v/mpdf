@@ -11,3 +11,4 @@
 	$qrcode = new QRcode(utf8_encode($msg), $err);
 	$qrcode->disableBorder();
 	$qrcode->displayPNG(200);
+?>

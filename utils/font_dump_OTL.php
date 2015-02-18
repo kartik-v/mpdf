@@ -2,7 +2,7 @@
 
 
 
-$family = 'dejavusanscondensed';
+$family = 'khmeros';
 //////////////////////////////////
 $style = '';	// '','B','I','BI'; // At present only works for Regular style
 //////////////////////////////////
@@ -20,7 +20,7 @@ if ($lang && strlen($lang)<4) { $lang = str_pad($lang, 4, ' '); }
 //////////////////////////////////
 //////////////////////////////////
 
-set_time_limit(600);
+set_time_limit(1200);
 ini_set("memory_limit","512M");
 
 //==============================================================

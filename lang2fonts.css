@@ -249,8 +249,10 @@
 }
 :lang("sd"), :lang("snd")  {	/* Sindhi */
 	font-family: lateef;
+}
 :lang("sd-IN") {		/* Sindhi */
 	font-family: freeserif;
+}
 :lang("sd-PK") {		/* Sindhi */
 	font-family: lateef;
 }

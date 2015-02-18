@@ -1,6 +1,12 @@
+v1.0.1
+==============
+**Date:** 18-Feb-2015
+
+- Upgrade to latest archive of mPDF 6.0
+
 Initial Release
 ===============
-28/12/2013
+**Date:** 28-Dec-2014
 
 - mPDF 6.0
 

@@ -619,6 +619,7 @@ public static $ot_languages = array(
 	'xom' =>	'KMO ',	/* Komo (Sudan) */
 	'xsl' =>	'SSL ',	/* South Slavey */
 	'yi' =>	'JII ',	/* Yiddish */
+	'yid' =>	'JII ',	/* Yiddish */
 	'yo' =>	'YBA ',	/* Yoruba */
 	'yso' =>	'NIS ',	/* Nisi (China) */
 	'zne' =>	'ZND ',	/* Zande */
@@ -632,40 +633,6 @@ public static $ot_languages = array(
 );
 
 
-
-
-/*
-const GENERAL_CATEGORY_CC = 0;
-const GENERAL_CATEGORY_CF = 1;
-const GENERAL_CATEGORY_CN = 2;
-const GENERAL_CATEGORY_CO = 3;
-const GENERAL_CATEGORY_CS = 4;
-const GENERAL_CATEGORY_LL = 5;
-const GENERAL_CATEGORY_LM = 6;
-const GENERAL_CATEGORY_LO = 7;
-const GENERAL_CATEGORY_LT = 8;
-const GENERAL_CATEGORY_LU = 9;
-const GENERAL_CATEGORY_MC = 10;
-const GENERAL_CATEGORY_ME = 11;
-const GENERAL_CATEGORY_MN = 12;
-const GENERAL_CATEGORY_ND = 13;
-const GENERAL_CATEGORY_NL = 14;
-const GENERAL_CATEGORY_NO = 15;
-const GENERAL_CATEGORY_PC = 16;
-const GENERAL_CATEGORY_PD = 17;
-const GENERAL_CATEGORY_PE = 18;
-const GENERAL_CATEGORY_PF = 19;
-const GENERAL_CATEGORY_PI = 20;
-const GENERAL_CATEGORY_PO = 21;
-const GENERAL_CATEGORY_PS = 22;
-const GENERAL_CATEGORY_SC = 23;
-const GENERAL_CATEGORY_SK = 24;
-const GENERAL_CATEGORY_SM = 25;
-const GENERAL_CATEGORY_SO = 26;
-const GENERAL_CATEGORY_ZL = 27;
-const GENERAL_CATEGORY_ZP = 28;
-const GENERAL_CATEGORY_ZS = 29;
-*/
 
 // hb-unicode.h
 const UNICODE_GENERAL_CATEGORY_CONTROL = 0;			/* Cc */
