@@ -1,6 +1,12 @@
 mpdf
 ====
 
+[![BOWER version](https://badge-me.herokuapp.com/api/bower/kartik-v/mpdf.png)](http://badges.enytc.com/for/bower/kartik-v/mpdf)
+[![Latest Stable Version](https://poser.pugx.org/kartik-v/mpdf/v/stable)](https://packagist.org/packages/kartik-v/mpdf)
+[![License](https://poser.pugx.org/kartik-v/mpdf/license)](https://packagist.org/packages/kartik-v/mpdf)
+[![Packagist Downloads](https://poser.pugx.org/kartik-v/mpdf/downloads)](https://packagist.org/packages/kartik-v/mpdf)
+[![Monthly Downloads](https://poser.pugx.org/kartik-v/mpdf/d/monthly)](https://packagist.org/packages/kartik-v/mpdf)
+
 This is a fork of the [mPDF library](http://mpdf1.com/). mPDF is a PHP class which generates PDF files from UTF-8 encoded HTML. It is based on [FPDF](http://www.fpdf.org/) and [HTML2FPDF](http://html2fpdf.sourceforge.net/), with a number of enhancements.
 It is slower than the original scripts e.g. HTML2FPDF and produces larger files when using Unicode fonts, but support for CSS styles etc. has been much enhanced.
 
