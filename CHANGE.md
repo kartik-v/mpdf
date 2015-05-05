@@ -1,3 +1,9 @@
+v1.0.2
+==============
+**Date:** 05-May-2015
+
+- (enh #1): Remove not needed files by clearing iccprofiles/CMYK folder.
+
 v1.0.1
 ==============
 **Date:** 18-Feb-2015
