@@ -1,3 +1,9 @@
+v1.0.3
+==============
+**Date:** 18-Jun-2015
+
+- Minor fixes to composer.json.
+
 v1.0.2
 ==============
 **Date:** 05-May-2015
