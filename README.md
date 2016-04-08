@@ -1,6 +1,14 @@
 mpdf
 ====
 
+---
+
+### Use the [mpdf/mpdf](https://github.com/mpdf/mpdf) repo instead
+
+> Effective 08-Apr-2016, I am redirecting and encouraging folks to use the above repo - to ensure a single codebase for mpdf management in future. This repo was initially created since there was no other package having the 6.x release that could be installed via composer. For folks coming over from Yii, note that the [yii2-mpdf extension](https://github.com/kartik-v/yii2-mpdf) has been modified to use the [mpdf/mpdf](https://github.com/mpdf/mpdf) repo
+
+---
+
 [![Latest Stable Version](https://poser.pugx.org/kartik-v/mpdf/v/stable)](https://packagist.org/packages/kartik-v/mpdf)
 [![License](https://poser.pugx.org/kartik-v/mpdf/license)](https://packagist.org/packages/kartik-v/mpdf)
 [![Total Downloads](https://poser.pugx.org/kartik-v/mpdf/downloads)](https://packagist.org/packages/kartik-v/mpdf)
