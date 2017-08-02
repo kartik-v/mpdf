@@ -21,79 +21,88 @@ if(!function_exists('imagepalettetotruecolor')) {
 
 // mPDF 5.7
 // Replace a section of an array with the elements in reverse
-function array_splice_reverse(&$arr, $offset, $length) {
-	$tmp = (array_reverse(array_slice($arr, $offset, $length)));
-	array_splice($arr, $offset, $length, $tmp);
+if(!function_exists('array_splice_reverse')) {
+  function array_splice_reverse(&$arr, $offset, $length) {
+  	$tmp = (array_reverse(array_slice($arr, $offset, $length)));
+  	array_splice($arr, $offset, $length, $tmp);
+  }
 }
 
-
-function array_insert(&$array, $value, $offset) {
-	if (is_array($array)) {
-		$array  = array_values($array);
-		$offset = intval($offset);
-		if ($offset < 0 || $offset >= count($array)) { array_push($array, $value); }
-		else if ($offset == 0) { array_unshift($array, $value); }
-		else { 
-			$temp  = array_slice($array, 0, $offset);
-			array_push($temp, $value);
-			$array = array_slice($array, $offset);
-			$array = array_merge($temp, $array);
-		}
-	}
-	else { $array = array($value); }
-	return count($array);
+if(!function_exists('array_insert')) {
+  function array_insert(&$array, $value, $offset) {
+  	if (is_array($array)) {
+  		$array  = array_values($array);
+  		$offset = intval($offset);
+  		if ($offset < 0 || $offset >= count($array)) { array_push($array, $value); }
+  		else if ($offset == 0) { array_unshift($array, $value); }
+  		else {
+  			$temp  = array_slice($array, 0, $offset);
+  			array_push($temp, $value);
+  			$array = array_slice($array, $offset);
+  			$array = array_merge($temp, $array);
+  		}
+  	}
+  	else { $array = array($value); }
+  	return count($array);
+  }
 }
 
 // mPDF 5.7.4 URLs
-function urldecode_parts($url) {
-	$file=$url;
-	$query='';
-	if (preg_match('/[?]/',$url)) {
-		$bits = preg_split('/[?]/',$url,2);
-		$file=$bits[0];
-		$query='?'.$bits[1];
-	}
-	$file = rawurldecode($file);
-	$query = urldecode($query);
-	return $file.$query;
+if(!function_exists('urldecode_parts')) {
+  function urldecode_parts($url) {
+  	$file=$url;
+  	$query='';
+  	if (preg_match('/[?]/',$url)) {
+  		$bits = preg_split('/[?]/',$url,2);
+  		$file=$bits[0];
+  		$query='?'.$bits[1];
+  	}
+  	$file = rawurldecode($file);
+  	$query = urldecode($query);
+  	return $file.$query;
+  }
 }
 
-
-function _strspn($str1, $str2, $start=null, $length=null) {
-	$numargs = func_num_args();
-	if ($numargs == 2) {
-		return strspn($str1, $str2);
-	}
-	else if ($numargs == 3) {
-		return strspn($str1, $str2, $start);
-	}
-	else {
-		return strspn($str1, $str2, $start, $length);
-	}
+if(!function_exists('_strspn')) {
+  function _strspn($str1, $str2, $start=null, $length=null) {
+  	$numargs = func_num_args();
+  	if ($numargs == 2) {
+  		return strspn($str1, $str2);
+  	}
+  	else if ($numargs == 3) {
+  		return strspn($str1, $str2, $start);
+  	}
+  	else {
+  		return strspn($str1, $str2, $start, $length);
+  	}
+  }
 }
 
-
-function _strcspn($str1, $str2, $start=null, $length=null) {
-	$numargs = func_num_args();
-	if ($numargs == 2) {
-		return strcspn($str1, $str2);
-	} 
-	else if ($numargs == 3) {
-		return strcspn($str1, $str2, $start);
-	} 
-	else {
-		return strcspn($str1, $str2, $start, $length);
-	}
+if(!function_exists('_strcspn')) {
+  function _strcspn($str1, $str2, $start=null, $length=null) {
+  	$numargs = func_num_args();
+  	if ($numargs == 2) {
+  		return strcspn($str1, $str2);
+  	}
+  	else if ($numargs == 3) {
+  		return strcspn($str1, $str2, $start);
+  	}
+  	else {
+  		return strcspn($str1, $str2, $start, $length);
+  	}
+  }
 }
 
-function _fgets (&$h, $force=false) {
-	$startpos = ftell($h);
-	$s = fgets($h, 1024);
-	if ($force && preg_match("/^([^\r\n]*[\r\n]{1,2})(.)/",trim($s), $ns)) {
-		$s = $ns[1];
-		fseek($h,$startpos+strlen($s));
-	}
-	return $s;
+if(!function_exists('_fgets')) {
+  function _fgets (&$h, $force=false) {
+  	$startpos = ftell($h);
+  	$s = fgets($h, 1024);
+  	if ($force && preg_match("/^([^\r\n]*[\r\n]{1,2})(.)/",trim($s), $ns)) {
+  		$s = $ns[1];
+  		fseek($h,$startpos+strlen($s));
+  	}
+  	return $s;
+  }
 }
 
 
@@ -101,7 +110,7 @@ function _fgets (&$h, $force=false) {
 if(!function_exists('str_ireplace')) {
   function str_ireplace($search,$replace,$subject) {
 	$search = preg_quote($search, "/");
-	return preg_replace("/".$search."/i", $replace, $subject); 
+	return preg_replace("/".$search."/i", $replace, $subject);
   }
 }
 if(!function_exists('htmlspecialchars_decode')) {
@@ -110,13 +119,15 @@ if(!function_exists('htmlspecialchars_decode')) {
 	}
 }
 
-function PreparePreText($text,$ff='//FF//') {
-	$text = htmlspecialchars($text);
-	if ($ff) { $text = str_replace($ff,'</pre><formfeed /><pre>',$text); }
-	return ('<pre>'.$text.'</pre>');
+if(!function_exists('PreparePreText')) {
+  function PreparePreText($text,$ff='//FF//') {
+  	$text = htmlspecialchars($text);
+  	if ($ff) { $text = str_replace($ff,'</pre><formfeed /><pre>',$text); }
+  	return ('<pre>'.$text.'</pre>');
+  }
 }
 
-if(!function_exists('strcode2utf')){ 
+if(!function_exists('strcode2utf')){
   function strcode2utf($str,$lo=true) {
 	//converts all the &#nnn; and &#xhhh; in a string to Unicode
 	// mPDF 5.7
@@ -131,21 +142,29 @@ if(!function_exists('strcode2utf')){
 	return $str;
   }
 }
-function code2utf_callback($matches) {
-	return code2utf($matches[1], 0);
+if(!function_exists('code2utf_callback')){
+  function code2utf_callback($matches) {
+  	return code2utf($matches[1], 0);
+  }
 }
-function code2utf_lo_callback($matches) {
-	return code2utf($matches[1], 1);
+if(!function_exists('code2utf_lo_callback')){
+  function code2utf_lo_callback($matches) {
+  	return code2utf($matches[1], 1);
+  }
 }
-function codeHex2utf_callback($matches) {
-	return codeHex2utf($matches[1], 0);
+if(!function_exists('codeHex2utf_callback')){
+  function codeHex2utf_callback($matches) {
+  	return codeHex2utf($matches[1], 0);
+  }
 }
-function codeHex2utf_lo_callback($matches) {
-	return codeHex2utf($matches[1], 1);
+if(!function_exists('codeHex2utf_lo_callback')){
+  function codeHex2utf_lo_callback($matches) {
+  	return codeHex2utf($matches[1], 1);
+  }
 }
 
 
-if(!function_exists('code2utf')){ 
+if(!function_exists('code2utf')){
   function code2utf($num,$lo=true){
 	//Returns the utf string corresponding to the unicode value
 	if ($num<128) {
@@ -160,7 +179,7 @@ if(!function_exists('code2utf')){
 }
 
 
-if(!function_exists('codeHex2utf')){ 
+if(!function_exists('codeHex2utf')){
   function codeHex2utf($hex,$lo=true){
 	$num = hexdec($hex);
 	if (($num<128) && !$lo) return '&#x'.$hex.';';
